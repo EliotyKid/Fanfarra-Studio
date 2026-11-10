@@ -39,7 +39,7 @@ export function Sequencer({ p, bars, spb, compact, dense, onToggleStep, cellWidt
   const style = { ...HEADS, ...(dense && DENSE), ...(!p.playing && { '--ph': p.pos / total }) }
   return (
     <div ref={p.phRef} style={style}>
-      <StepSequencer compact={compact} tracks={tracks} bars={bars} stepsPerBar={spb} stepsPerBeat={4}
+      <StepSequencer compact={compact} tracks={tracks} bars={bars} stepsPerBar={spb} stepsPerBeat={p.perBeat}
         playhead={p.pos} playing={p.playing} minCellWidth={cellWidth ?? (compact ? 18 : 16)}
         onToggleStep={onToggleStep || ((id, i) => p.audition(id, i))} onMuteToggle={p.toggleMute} onSoloToggle={p.toggleSolo} onSeek={p.seek} />
     </div>

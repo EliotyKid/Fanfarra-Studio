@@ -48,3 +48,22 @@ test('parseImport sanitizes untrusted files', () => {
   assert.deepEqual(d.hits, { bumbo: [[0, 100], [3, 127]] })
   assert.throws(() => M.parseImport('not json', rows))
 })
+
+test('setSubdiv keeps exact hits, snaps the rest and counts them', () => {
+  const d = { ...M.novo(1), compassos: 1, hits: { bumbo: [[0, 100], [2, 60], [3, 127]] } } // 16ths: beat 1, its 8th, its last 16th
+  const up = M.setSubdiv(d, 8) // fusas: everything fits exactly
+  assert.deepEqual(up.doc.hits.bumbo, [[0, 100], [4, 60], [6, 127]])
+  assert.equal(up.movidas, 0)
+  const tri = M.setSubdiv(d, 3) // tercinas: 2/4 of a beat -> 1.5 -> 2, 3/4 -> 2.25 -> 2 (merged, strongest kept)
+  assert.deepEqual(tri.doc.hits.bumbo, [[0, 100], [2, 127]])
+  assert.equal(tri.movidas, 2)
+  assert.equal(M.stepsPerBar(tri.doc), 12)
+})
+
+test('docs without subdiv are 16ths; import keeps a valid subdiv', () => {
+  assert.equal(M.subdivOf({}), 4)
+  const d = M.parseImport(JSON.stringify({ compassos: 1, subdiv: 8, hits: { bumbo: [31, 32] } }), rows)
+  assert.equal(d.subdiv, 8)
+  assert.deepEqual(d.hits.bumbo, [[31, 100]]) // 1 bar of 4/4 in fusas = 32 steps
+  assert.equal(M.parseImport(JSON.stringify({ subdiv: 5 }), rows).subdiv, 4)
+})

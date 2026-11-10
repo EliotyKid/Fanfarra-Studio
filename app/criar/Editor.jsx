@@ -15,7 +15,7 @@ import { useFullscreen, useMobile } from '@/lib/media'
 import * as M from '@/lib/meusToques'
 import { FullscreenButton, LoadError, Sequencer } from '../ui'
 
-const compassosOptions = Array.from({ length: M.MAX_COMPASSOS }, (_, i) => ({ value: i + 1, label: `${i + 1} ${i ? 'compassos' : 'compasso'}` }))
+const plural = (n) => `${n} ${n === 1 ? 'compasso' : 'compassos'}`
 
 export default function Editor({ instrumentos }) {
   const rows = useMemo(() => kitRows(instrumentos), [instrumentos])
@@ -38,10 +38,10 @@ export default function Editor({ instrumentos }) {
   useEffect(() => { if (list) setSaved(M.saveAll(list)) }, [list])
 
   const doc = list?.find((d) => d.id === curId)
-  const spb = doc ? M.stepsPerBar(doc.compasso) : 16
+  const spb = doc ? M.stepsPerBar(doc) : 16
   const total = doc ? doc.compassos * spb : 16
   const rawTracks = useMemo(() => (doc ? M.toTracks(doc, rows) : []), [doc, rows])
-  const e = useEngine({ rawTracks, total, bpm: doc?.bpm ?? 120, loop, instrumentos })
+  const e = useEngine({ rawTracks, total, bpm: doc?.bpm ?? 120, perBeat: doc ? M.subdivOf(doc) : 4, loop, instrumentos })
   useSpaceToPlay(e.togglePlay)
 
   if (!doc || mobile === null) return null
@@ -56,6 +56,18 @@ export default function Editor({ instrumentos }) {
     const removing = M.velAt(doc, id, i) === forca
     update((d) => M.applyHit(d, id, i, forca))
     if (!removing && !e.playing) e.audition(id, i, M.hitFor(rows.find((r) => r.id === id), forca))
+  }
+  const changeSubdiv = (v) => {
+    const { doc: next, movidas } = M.setSubdiv(doc, v)
+    if (movidas && !window.confirm(`${movidas} ${movidas === 1 ? 'batida não cabe' : 'batidas não cabem'} certinho na nova subdivisão e ${movidas === 1 ? 'vai' : 'vão'} para o ponto mais próximo. Continuar?`)) return
+    update(() => next)
+    e.resetPos()
+  }
+  const removeBar = () => {
+    const first = (doc.compassos - 1) * spb
+    const lost = Object.values(doc.hits).some((h) => h.some(([i]) => i >= first))
+    if (lost && !window.confirm(`O compasso ${doc.compassos} tem batidas. Tirar e apagar essas batidas?`)) return
+    update((d) => M.setCompassos(d, d.compassos - 1))
   }
   const remove = () => {
     if (!window.confirm(`Excluir “${doc.nome}”? Isso não pode ser desfeito.`)) return
@@ -85,7 +97,7 @@ export default function Editor({ instrumentos }) {
   }
 
   const hits = Object.values(doc.hits).reduce((n, s) => n + s.length, 0)
-  const meta = `${doc.compasso} · ${doc.compassos} ${doc.compassos > 1 ? 'compassos' : 'compasso'} · ${hits} ${hits === 1 ? 'batida' : 'batidas'}`
+  const meta = `${doc.compasso} · ${plural(doc.compassos)} · ${hits} ${hits === 1 ? 'batida' : 'batidas'}`
   const size = mobile ? 'lg' : 'md'
 
   return (
@@ -113,8 +125,14 @@ export default function Editor({ instrumentos }) {
             onChange={(v) => update((d) => ({ ...d, bpm: v }))} />
           <Select label="Compasso" icon="drum" value={doc.compasso} options={M.COMPASSOS} size={size}
             onChange={(v) => { update((d) => M.setCompasso(d, v)); e.resetPos() }} />
-          <Select label="Tamanho" icon="timer" value={doc.compassos} options={compassosOptions} size={size}
-            onChange={(v) => update((d) => M.setCompassos(d, v))} />
+          <Select label="Subdivisão" icon="audio-lines" value={M.subdivOf(doc)} options={M.SUBDIVISOES} size={size} onChange={changeSubdiv} />
+          <div role="group" aria-label="Número de compassos" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <IconButton icon="minus" label="Tirar o último compasso" variant="surface" size={mobile ? 'lg' : 'md'}
+              disabled={doc.compassos <= 1} onClick={removeBar} />
+            <span aria-live="polite" style={{ font: 'var(--type-value)', minWidth: 112, textAlign: 'center' }}>{plural(doc.compassos)}</span>
+            <IconButton icon="plus" label="Adicionar compasso" variant="surface" size={mobile ? 'lg' : 'md'}
+              disabled={doc.compassos >= M.MAX_COMPASSOS} onClick={() => update((d) => M.setCompassos(d, d.compassos + 1))} />
+          </div>
           {!mobile && <ToggleButton icon="rotate-cw" pressed={loop} onPressedChange={setLoop}>Loop</ToggleButton>}
           <div style={{ display: 'flex', gap: 4, marginLeft: 'auto' }}>
             <Button variant="ghost" size="sm" onClick={exportar}>Exportar</Button>
