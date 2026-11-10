@@ -21,6 +21,14 @@ FPC_GM_KEYS = [37, 36, 42, 54, 38, 40, 46, 44, 48, 47, 45, 43, 49, 57, 51, 53]
 ALIASES = {"p2": "Surdo"}
 # FPC pad name -> where to hit, shown on the site when an instrument uses several pads.
 PAD_LABELS = {"Snare 1": "Pele", "Snare 2": "Pele", "SideStick": "Aro"}
+# Per-instrument timbre (ffmpeg -af chain) applied to the site samples only; FL keeps its sound.
+# Repique: the FPC "Hi Tom" sits at ~162 Hz like a tom; a real repique is small and very tight
+# (~300-450 Hz, sharp attack, dry). Up 10 semitones (asetrate = 44100 * 2^(10/12); aresample normalizes the rate first), cut lows,
+# lift the skin crack around 3.5 kHz, short tail.
+TIMBRE = {
+    "Repique": "aresample=44100,asetrate=78577,aresample=44100,highpass=f=180,"
+               "equalizer=f=3500:t=q:w=1.2:g=6,afade=t=out:st=0.12:d=0.18,atrim=0:0.32",
+}
 
 
 def read_events(path):
@@ -94,22 +102,26 @@ def fpc_pads(blob):
     return {FPC_GM_KEYS[i]: p for i, p in enumerate(pads)}
 
 
-def copy_sample(src, dst):
-    """Copy a sample as browser-playable PCM WAV. FL factory WAVs use codec 0x6750
-    (an Ogg Vorbis stream inside the data chunk), which browsers cannot decode."""
+def copy_sample(src, dst, af=None):
+    """Copy a sample as browser-playable PCM WAV, optionally through an ffmpeg filter chain `af`.
+    FL factory WAVs use codec 0x6750 (an Ogg Vorbis stream inside the data chunk), which browsers cannot decode."""
     d = src.read_bytes()
     chunks, i = {}, 12
     while i + 8 <= len(d):
         n = struct.unpack("<I", d[i + 4:i + 8])[0]
         chunks.setdefault(d[i:i + 4], d[i + 8:i + 8 + n]); i += 8 + n + (n & 1)
-    if struct.unpack("<H", chunks[b"fmt "][:2])[0] != 0x6750:
+    vorbis = struct.unpack("<H", chunks[b"fmt "][:2])[0] == 0x6750
+    if not vorbis and not af:
         shutil.copy2(src, dst); return
-    ogg = dst.with_suffix(".ogg")
-    ogg.write_bytes(chunks[b"data"])
+    inp = dst.with_suffix(".ogg") if vorbis else src
+    if vorbis:
+        inp.write_bytes(chunks[b"data"])
     try:
-        subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(ogg), "-c:a", "pcm_s16le", str(dst)], check=True)
+        subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(inp), *(["-af", af] if af else []),
+                        "-c:a", "pcm_s16le", str(dst)], check=True)
     finally:
-        ogg.unlink()
+        if vorbis:
+            inp.unlink()
 
 
 def write_midi(path, ppq, tempo, num, den, title, tracks):
@@ -181,7 +193,7 @@ def main():
                 f = a.fl_data / src.replace("%FLStudioFactoryData%\\", "").replace("\\", "/")
                 dst = ROOT / "samples" / slug(inst) / f.name
                 if f.exists():
-                    dst.parent.mkdir(parents=True, exist_ok=True); copy_sample(f, dst)
+                    dst.parent.mkdir(parents=True, exist_ok=True); copy_sample(f, dst, TIMBRE.get(inst))
                     files.append(str(dst.relative_to(ROOT)))
                 else:
                     print(f"AVISO: sample não encontrado: {f}", file=sys.stderr)
