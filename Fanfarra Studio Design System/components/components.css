@@ -46,11 +46,12 @@
 .fs-select__trigger:hover:not(:disabled){background:var(--surface-card);border-color:var(--border-strong)}
 .fs-select__trigger[aria-expanded="true"]{border-color:rgba(139,92,246,.6);background:var(--surface-card)}
 .fs-select__trigger:disabled{opacity:.4;cursor:not-allowed}
-.fs-select__value{font:var(--type-value);letter-spacing:var(--tracking-mono)}
+.fs-select__value{font:var(--type-value);letter-spacing:var(--tracking-mono);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fs-select__chev{color:var(--fg-2);transition:transform var(--dur-base) var(--ease-out)}
 .fs-select__trigger[aria-expanded="true"] .fs-select__chev{transform:rotate(180deg)}
 .fs-select--lg .fs-select__trigger{height:var(--control-h-lg);padding:0 var(--space-4)}
-.fs-select--block,.fs-select--block .fs-select__trigger{width:100%}
+.fs-select--block,.fs-select--block .fs-select__trigger{width:100%;min-width:0}
+.fs-select--block .fs-select__value{flex:1;text-align:left}
 .fs-select--block .fs-select__chev{margin-left:auto}
 .fs-select__menu{position:absolute;top:calc(100% + 6px);left:0;min-width:100%;max-height:280px;overflow:auto;margin:0;padding:var(--space-1-5);list-style:none;background:var(--surface-card);border-radius:var(--radius-lg);box-shadow:var(--shadow-pop);z-index:var(--z-popover);animation:fs-pop var(--dur-base) var(--ease-out)}
 .fs-select__option{display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);height:36px;padding:0 var(--space-2-5);border-radius:var(--radius-sm);color:var(--fg-1);font:var(--type-value);cursor:pointer;white-space:nowrap}
@@ -148,6 +149,8 @@ button.fs-status__trail:hover{background:var(--surface-hover)}
 .fs-seq__cell[aria-pressed="true"]:hover .fs-seq__block{background:color-mix(in oklab,currentColor 88%,white)}
 .fs-seq__cell[data-hit="true"] .fs-seq__block{background:color-mix(in oklab,currentColor 65%,white);box-shadow:0 0 18px color-mix(in oklab,currentColor 70%,transparent)}
 .fs-seq__lane[data-muted="true"] .fs-seq__cell[aria-pressed="true"] .fs-seq__block{background:color-mix(in oklab,currentColor 28%,transparent);box-shadow:none}
+/* Selected hits (editor): a light ring around the block, paint-only. */
+.fs-seq__cell[data-selected="true"] .fs-seq__block{box-shadow:0 0 0 2px var(--bg-app),0 0 0 4px var(--fg-1)}
 /* Full-width layer moved with transform. While playing the app animates it with the Web Animations API,
    which runs on the compositor: no main-thread work per frame, whatever the grid size. */
 .fs-seq__playhead{position:absolute;top:0;bottom:0;left:0;width:100%;pointer-events:none;z-index:var(--z-playhead);will-change:transform}

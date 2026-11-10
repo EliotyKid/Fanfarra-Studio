@@ -5,13 +5,14 @@ import { TrackHeader } from './TrackHeader.jsx';
 // or the flashing hit enters/leaves it, not on every playhead step.
 const Lane = React.memo(function Lane({ t, total, cols, stepsPerBar, stepsPerBeat, hit, toggle }) {
   return (
-    <div className="fs-seq__lane" data-muted={!!(t.muted || t.silenced)} style={{ '--inst': t.color, gridTemplateColumns: cols }}>
+    <div className="fs-seq__lane" data-row={t.id} data-muted={!!(t.muted || t.silenced)} style={{ '--inst': t.color, gridTemplateColumns: cols }}>
       {Array.from({ length: total }, (_, i) => {
         const on = !!(t.steps && t.steps[i]);
         const lv = on && t.levels ? t.levels[i] : null; // optional hit strength 0..1, drawn as block height
         return (
           <button key={i} type="button" className="fs-seq__cell" aria-pressed={on} style={lv == null ? undefined : { '--level': lv }}
-            data-bar={i % stepsPerBar === 0} data-beat={i % stepsPerBeat === 0} data-hit={hit === i}
+            data-step={i} data-bar={i % stepsPerBar === 0} data-beat={i % stepsPerBeat === 0} data-hit={hit === i}
+            data-selected={t.selected ? t.selected.has(i) : undefined /* optional Set of selected steps */}
             aria-label={t.name + ', compasso ' + (Math.floor(i / stepsPerBar) + 1) + ', passo ' + ((i % stepsPerBar) + 1) + (lv == null ? '' : ', força ' + Math.round(lv * 100) + '%')}
             onClick={() => toggle(t.id, i, !on)}>
             <span className="fs-seq__block"></span>
