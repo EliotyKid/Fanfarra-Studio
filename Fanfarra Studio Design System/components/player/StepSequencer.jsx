@@ -1,11 +1,36 @@
 import React from 'react';
 import { TrackHeader } from './TrackHeader.jsx';
 
+// One instrument row. Memoized: while playing, a row re-renders only when its own data changes
+// or the flashing hit enters/leaves it, not on every playhead step.
+const Lane = React.memo(function Lane({ t, total, cols, stepsPerBar, stepsPerBeat, hit, toggle }) {
+  return (
+    <div className="fs-seq__lane" data-muted={!!(t.muted || t.silenced)} style={{ '--inst': t.color, gridTemplateColumns: cols }}>
+      {Array.from({ length: total }, (_, i) => {
+        const on = !!(t.steps && t.steps[i]);
+        const lv = on && t.levels ? t.levels[i] : null; // optional hit strength 0..1, drawn as block height
+        return (
+          <button key={i} type="button" className="fs-seq__cell" aria-pressed={on} style={lv == null ? undefined : { '--level': lv }}
+            data-bar={i % stepsPerBar === 0} data-beat={i % stepsPerBeat === 0} data-hit={hit === i}
+            aria-label={t.name + ', compasso ' + (Math.floor(i / stepsPerBar) + 1) + ', passo ' + ((i % stepsPerBar) + 1) + (lv == null ? '' : ', força ' + Math.round(lv * 100) + '%')}
+            onClick={() => toggle(t.id, i, !on)}>
+            <span className="fs-seq__block"></span>
+          </button>
+        );
+      })}
+    </div>
+  );
+});
+
+// Playhead: an ancestor may set --ph (0..1) to move it smoothly every frame without re-rendering.
 export function StepSequencer({ tracks = [], bars = 4, stepsPerBar = 8, stepsPerBeat = 2, playhead = null, playing = false, onToggleStep, onMuteToggle, onSoloToggle, onSeek, compact = false, minCellWidth, followPlayhead = true, className = '', style }) {
   const total = bars * stepsPerBar;
   const minCell = minCellWidth ?? (compact ? 18 : 20);
   const cur = playhead == null ? -1 : Math.floor(playhead) % total;
   const scrollRef = React.useRef(null);
+  const toggleRef = React.useRef(onToggleStep);
+  toggleRef.current = onToggleStep;
+  const toggle = React.useCallback((id, i, on) => toggleRef.current && toggleRef.current(id, i, on), []);
   const curBar = cur < 0 ? -1 : Math.floor(cur / stepsPerBar);
 
   React.useEffect(() => {
@@ -50,24 +75,12 @@ export function StepSequencer({ tracks = [], bars = 4, stepsPerBar = 8, stepsPer
             {Array.from({ length: bars }, (_, b) => <div key={b} className="fs-seq__bar">{b + 1}</div>)}
           </div>
           <div className="fs-seq__lanes">
-            {tracks.map((t, ti) => (
-              <div key={t.id} className="fs-seq__lane" data-muted={!!(t.muted || t.silenced)} style={{ '--inst': t.color, gridTemplateColumns: cols }}>
-                {Array.from({ length: total }, (_, i) => {
-                  const on = !!(t.steps && t.steps[i]);
-                  const lv = on && t.levels ? t.levels[i] : null; // optional hit strength 0..1, drawn as block height
-                  return (
-                    <button key={i} type="button" className="fs-seq__cell" aria-pressed={on} style={lv == null ? undefined : { '--level': lv }}
-                      data-bar={i % stepsPerBar === 0} data-beat={i % stepsPerBeat === 0} data-hit={playing && on && cur === i}
-                      aria-label={t.name + ', compasso ' + (Math.floor(i / stepsPerBar) + 1) + ', passo ' + ((i % stepsPerBar) + 1) + (lv == null ? '' : ', força ' + Math.round(lv * 100) + '%')}
-                      onClick={() => onToggleStep && onToggleStep(t.id, i, !on)}>
-                      <span className="fs-seq__block"></span>
-                    </button>
-                  );
-                })}
-              </div>
+            {tracks.map((t) => (
+              <Lane key={t.id} t={t} total={total} cols={cols} stepsPerBar={stepsPerBar} stepsPerBeat={stepsPerBeat}
+                hit={playing && cur >= 0 && t.steps && t.steps[cur] ? cur : -1} toggle={toggle} />
             ))}
           </div>
-          {playhead != null && <div className="fs-seq__playhead" style={{ left: ((playhead % total) / total) * 100 + '%' }} aria-hidden="true"></div>}
+          {playhead != null && <div className="fs-seq__playhead" style={{ transform: 'translateX(calc(var(--ph, ' + (playhead % total) / total + ') * 100%))' }} aria-hidden="true"></div>}
         </div>
       </div>
     </div>

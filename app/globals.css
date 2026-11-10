@@ -13,8 +13,8 @@ button, [role=slider] { touch-action: manipulation; }
 .shell__main { display: flex; min-width: 0; min-height: 0; overflow: auto; }
 .shell__top, .shell__scrim, .shell__drawer { display: none; }
 
-@media (max-width: 759px) {
-  .shell { position: relative; display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+@media (max-width: 759px), (max-height: 500px) {
+  .shell { position: relative; display: flex; flex-direction: column; padding: 0 env(safe-area-inset-right) 0 env(safe-area-inset-left); overflow: hidden; }
   .shell__top { display: flex; align-items: center; justify-content: space-between; padding: calc(10px + env(safe-area-inset-top)) 12px 10px 18px; border-bottom: 1px solid var(--border-subtle); }
   .shell__frame { flex: 1; min-height: 0; display: flex; border: 0; border-radius: 0; box-shadow: none; }
   .shell__side { display: none; }
@@ -23,6 +23,15 @@ button, [role=slider] { touch-action: manipulation; }
   .shell__scrim[data-open="true"] { opacity: 1; pointer-events: auto; }
   .shell__drawer { display: flex; flex-direction: column; position: absolute; top: 0; right: 0; bottom: 0; z-index: 81; width: 78%; max-width: 320px; padding: calc(56px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom)); background: var(--surface-panel); border-left: 1px solid var(--border-subtle); box-shadow: var(--shadow-pop); transform: translateX(105%); transition: transform var(--dur-slow) var(--ease-out); }
   .shell__drawer[data-open="true"] { transform: none; }
+}
+
+/* Phone lying down: every pixel of height goes to the grid. */
+.shell__logo { height: 40px; width: auto; display: block; }
+@media (max-height: 500px) and (orientation: landscape) {
+  /* Height is scarce, width is not: the top bar becomes a slim left rail with just the menu button. */
+  .shell { flex-direction: row; }
+  .shell__top { flex-direction: column; justify-content: flex-start; padding: calc(6px + env(safe-area-inset-top)) 4px 6px; border-bottom: 0; border-right: 1px solid var(--border-subtle); }
+  .shell__logo { display: none; }
 }
 
 /* Bottom bars clear the iPhone home indicator. */

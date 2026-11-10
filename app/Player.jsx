@@ -6,7 +6,7 @@ import { ToggleButton } from '@ds/components/actions/ToggleButton.jsx'
 import { Icon } from '@ds/components/icons/Icon.jsx'
 import { TransportControls } from '@ds/components/player/TransportControls.jsx'
 import { usePlayer, useSpaceToPlay } from '@/lib/usePlayer'
-import { useFullscreen, useMobile } from '@/lib/media'
+import { useFullscreen, useLandscapePhone, useMobile } from '@/lib/media'
 import { FullscreenButton, LoadError, Sequencer } from './ui'
 
 const meta = (p) => `${p.toque.compasso} · ${p.toque.compassos} compassos`
@@ -77,9 +77,35 @@ function MobilePlayer({ p, fs }) {
   )
 }
 
+// Phone lying down: one toolbar row, the grid takes all the remaining height.
+// No volume bar: the phone's own buttons do that.
+function LandscapePlayer({ p, fs }) {
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px 8px 16px' }}>
+        <div style={{ minWidth: 0, flex: '1 1 0' }}>
+          <h1 title={meta(p)} style={{ font: '700 17px/1.2 var(--font-display)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.toque.nome}</h1>
+        </div>
+        <Select label="Toque" icon="list-music" value={p.idx} options={p.toqueOptions} onChange={p.setToque} />
+        <Select label="Andamento" icon="music-2" value={p.bpm} options={p.bpmOptions} onChange={p.setBpm} />
+        <TransportControls size="sm" playing={p.playing} onPlayToggle={p.setPlaying} onPrev={p.prev} onNext={p.next}
+          loop={p.loop} onLoopToggle={p.setLoop} />
+        <FullscreenButton fs={fs} />
+      </div>
+      <LoadError p={p} />
+      <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+        <Sequencer p={p} bars={p.toque.compassos} spb={p.toque.spb} compact dense />
+      </div>
+    </div>
+  )
+}
+
 export default function Player({ toques, instrumentos }) {
   const p = usePlayer(toques, instrumentos)
   useSpaceToPlay(p.togglePlay)
   const fs = useFullscreen()
-  return useMobile() ? <MobilePlayer p={p} fs={fs} /> : <DesktopPlayer p={p} fs={fs} />
+  const mobile = useMobile(), landscape = useLandscapePhone()
+  if (mobile === null) return null // static HTML: wait for the real screen size instead of flashing the desktop layout
+  if (landscape) return <LandscapePlayer p={p} fs={fs} />
+  return mobile ? <MobilePlayer p={p} fs={fs} /> : <DesktopPlayer p={p} fs={fs} />
 }

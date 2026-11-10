@@ -44,7 +44,7 @@ export default function Editor({ instrumentos }) {
   const e = useEngine({ rawTracks, total, bpm: doc?.bpm ?? 120, loop, instrumentos })
   useSpaceToPlay(e.togglePlay)
 
-  if (!doc) return null
+  if (!doc || mobile === null) return null
 
   const update = (fn) => setList((l) => l.map((d) => (d.id === curId ? { ...fn(d), atualizado: new Date().toISOString() } : d)))
   const select = (id) => { setCurId(id); e.resetPos() }

@@ -39,7 +39,7 @@ export default function Shell({ children }) {
   return (
     <div className="shell" data-fs={fs}>
       <header className="shell__top">
-        <img src={logoHorizontal.src} alt="Fanfarra Studio" style={{ height: 40, width: 'auto', display: 'block' }} />
+        <img src={logoHorizontal.src} alt="Fanfarra Studio" className="shell__logo" />
         <IconButton icon="menu" label="Abrir menu" size="lg" iconSize={24} onClick={() => setMenu(true)} style={{ color: 'var(--fg-1)' }} />
       </header>
       <div className="shell__frame">

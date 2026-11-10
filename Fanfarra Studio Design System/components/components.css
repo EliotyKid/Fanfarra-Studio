@@ -128,7 +128,7 @@ button.fs-status__trail:hover{background:var(--surface-hover)}
 .fs-seq__heads{display:flex;flex-direction:column;gap:4px;padding:0 var(--space-1) 4px var(--space-4);border-right:1px solid var(--border-subtle)}
 .fs-seq__corner{height:var(--seq-ruler-h);flex-shrink:0}
 .fs-seq__scroll{overflow-x:auto;overflow-y:hidden;min-width:0}
-.fs-seq__body{position:relative;min-width:100%}
+.fs-seq__body{position:relative;min-width:100%;overflow:clip}
 .fs-seq__ruler{display:grid;height:var(--seq-ruler-h);background:var(--surface-panel);border-bottom:1px solid var(--border-subtle)}
 .fs-seq__ruler[data-seek]{cursor:pointer;touch-action:none;user-select:none}
 .fs-seq__ruler[data-seek]:hover{background:var(--surface-card)}
@@ -146,8 +146,10 @@ button.fs-status__trail:hover{background:var(--surface-hover)}
 .fs-seq__cell[aria-pressed="true"]:hover .fs-seq__block{filter:brightness(1.12)}
 .fs-seq__cell[data-hit="true"] .fs-seq__block{filter:brightness(1.35);transform:scaleY(1.18);box-shadow:0 0 18px color-mix(in oklab,currentColor 70%,transparent)}
 .fs-seq__lane[data-muted="true"] .fs-seq__cell[aria-pressed="true"] .fs-seq__block{opacity:.28;box-shadow:none}
-.fs-seq__playhead{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--playhead);pointer-events:none;z-index:var(--z-playhead);box-shadow:0 0 8px rgba(139,92,246,.6)}
-.fs-seq__playhead::before{content:"";position:absolute;left:50%;top:calc(var(--seq-ruler-h) * .62);width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--playhead)}
+/* Full-width layer moved with transform (inline, from --ph): the GPU slides it without repainting the grid. */
+.fs-seq__playhead{position:absolute;top:0;bottom:0;left:0;width:100%;pointer-events:none;z-index:var(--z-playhead);will-change:transform}
+.fs-seq__playhead::after{content:"";position:absolute;top:0;bottom:0;left:-1px;width:2px;background:var(--playhead);box-shadow:0 0 8px rgba(139,92,246,.6)}
+.fs-seq__playhead::before{content:"";position:absolute;left:0;top:calc(var(--seq-ruler-h) * .62);width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--playhead)}
 [data-density="compact"]{--seq-row-h:var(--seq-row-h-compact);--seq-ruler-h:var(--seq-ruler-h-compact);--track-header-w:var(--track-header-w-compact)}
 .fs-seq--compact .fs-seq__heads{gap:4px;padding-left:0}
 .fs-seq--compact .fs-seq__block{height:calc(18px * var(--level,1));margin-top:calc(-9px * var(--level,1))}
