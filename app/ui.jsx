@@ -6,6 +6,7 @@ import { ToggleButton } from '@ds/components/actions/ToggleButton.jsx'
 import { StatusMessage } from '@ds/components/feedback/StatusMessage.jsx'
 import { StepSequencer } from '@ds/components/player/StepSequencer.jsx'
 import { toggleFullscreen, useCanFullscreen } from '@/lib/media'
+import { RAMPA_PASSO, rampaInicio } from '@/lib/usePratica'
 
 export function FullscreenButton({ fs }) {
   if (!useCanFullscreen()) return null
@@ -23,18 +24,21 @@ export function LoadError({ p }) {
 
 // Practice toggles (see lib/usePratica): Trecho loops some bars (picked on the ruler), Metrônomo clicks every
 // beat, Contagem plays one bar of clicks before starting. icons: icon-only buttons for tight toolbars.
-export function PraticaControls({ pr, p, spb, icons }) {
+// bpm: the chosen tempo (the ramp starts at 75% of it and climbs back to it).
+export function PraticaControls({ pr, p, spb, bpm, icons }) {
   const toggleTrecho = (on) => pr.setTrecho(on ? [Math.floor(p.pos / spb), Math.floor(p.pos / spb)] : null)
   const trechoLabel = pr.trecho ? (pr.trecho[0] === pr.trecho[1] ? `Trecho: compasso ${pr.trecho[0] + 1}` : `Trecho: ${pr.trecho[0] + 1}–${pr.trecho[1] + 1}`) : 'Trecho'
   const items = [
     { icon: 'brackets', label: trechoLabel, hint: 'Repetir só alguns compassos (escolha na régua)', on: !!pr.trecho, set: toggleTrecho },
     { icon: 'timer', label: 'Metrônomo', hint: 'Metrônomo', on: pr.metro, set: pr.setMetro },
     { icon: 'hourglass', label: 'Contagem', hint: 'Contagem de um compasso antes de começar', on: pr.countIn, set: pr.setCountIn },
+    { icon: 'trending-up', label: pr.rampa !== null ? `Rampa: ${pr.rampa} BPM` : 'Rampa', hint: `Começar mais lento e acelerar ${RAMPA_PASSO} BPM a cada volta`,
+      on: pr.rampa !== null, set: (on) => pr.setRampa(on ? rampaInicio(bpm) : null) },
   ]
   return (
     <div role="group" aria-label="Estudo" style={{ display: 'flex', alignItems: 'center', gap: icons ? 4 : 8, flexWrap: 'wrap' }}>
       {items.map((it) => icons
-        ? <IconButton key={it.icon} icon={it.icon} label={it.on && it.icon === 'brackets' ? trechoLabel : it.hint} variant="surface" pressed={it.on} onClick={() => it.set(!it.on)} />
+        ? <IconButton key={it.icon} icon={it.icon} label={it.on && it.label !== it.hint ? it.label : it.hint} variant="surface" pressed={it.on} onClick={() => it.set(!it.on)} />
         : <ToggleButton key={it.icon} icon={it.icon} pressed={it.on} onPressedChange={it.set} title={it.hint}>{it.label}</ToggleButton>)}
       <span aria-live="polite" style={{ font: 'var(--type-caption)', color: 'var(--fg-accent)' }}>{p.counting ? 'Contando…' : ''}</span>
     </div>

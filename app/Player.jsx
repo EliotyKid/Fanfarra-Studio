@@ -7,6 +7,7 @@ import { Icon } from '@ds/components/icons/Icon.jsx'
 import { TransportControls } from '@ds/components/player/TransportControls.jsx'
 import { PlayButton } from '@ds/components/actions/PlayButton.jsx'
 import { IconButton } from '@ds/components/actions/IconButton.jsx'
+import { Button } from '@ds/components/actions/Button.jsx'
 import { usePlayer, useSpaceToPlay } from '@/lib/usePlayer'
 import { useFullscreen, useLandscapePhone, useMobile } from '@/lib/media'
 import { FullscreenButton, LoadError, PraticaControls, Sequencer } from './ui'
@@ -23,12 +24,13 @@ function DesktopPlayer({ p, fs }) {
         <div style={{ minWidth: 0 }}>
           <h1 style={{ font: 'var(--type-title)', color: 'var(--fg-1)' }}>{p.toque.nome}</h1>
           <div style={{ font: 'var(--type-meta)', color: 'var(--fg-2)', marginTop: 8 }}>{meta(p)}</div>
+          <div style={{ marginTop: 10, marginLeft: -12 }}><Button variant="ghost" size="sm" icon="pencil" onClick={p.criarCopia}>Criar a partir deste</Button></div>
         </div>
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
           <Select label="Toque" icon="list-music" value={p.idx} options={p.toqueOptions} onChange={p.setToque} />
           <Select label="Andamento" icon="music-2" value={p.bpm} options={p.bpmOptions} onChange={p.setBpm} />
           <ToggleButton icon="rotate-cw" pressed={p.loop} onPressedChange={p.setLoop}>Loop</ToggleButton>
-          <PraticaControls pr={p.pr} p={p} spb={p.toque.spb} />
+          <PraticaControls pr={p.pr} p={p} spb={p.toque.spb} bpm={p.bpm} />
         </div>
       </header>
       <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0' }}>
@@ -57,8 +59,13 @@ function MobilePlayer({ p, fs }) {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       <div style={{ padding: '20px 16px 0' }}>
-        <h1 style={{ font: '700 20px/1.2 var(--font-display)' }}>{p.toque.nome}</h1>
-        <div style={{ font: '400 13px/1.3 var(--font-mono)', color: 'var(--fg-2)', marginTop: 4 }}>{meta(p)}</div>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+          <div style={{ minWidth: 0 }}>
+            <h1 style={{ font: '700 20px/1.2 var(--font-display)' }}>{p.toque.nome}</h1>
+            <div style={{ font: '400 13px/1.3 var(--font-mono)', color: 'var(--fg-2)', marginTop: 4 }}>{meta(p)}</div>
+          </div>
+          <IconButton icon="pencil" label="Criar a partir deste" variant="surface" size="lg" onClick={p.criarCopia} />
+        </div>
       </div>
       <div style={{ display: 'flex', gap: 12, padding: '20px 16px 0' }}>
         <Select label="Toque" icon="list-music" value={p.idx} options={p.toqueOptions} onChange={p.setToque} size="lg" block />
@@ -68,7 +75,7 @@ function MobilePlayer({ p, fs }) {
         <TransportControls size="sm" spread playing={p.playing} onPlayToggle={p.setPlaying} onPrev={p.prev} onNext={p.next}
           loop={p.loop} onLoopToggle={p.setLoop} />
       </div>
-      <div style={{ padding: '0 16px 16px' }}><PraticaControls pr={p.pr} p={p} spb={p.toque.spb} /></div>
+      <div style={{ padding: '0 16px 16px' }}><PraticaControls pr={p.pr} p={p} spb={p.toque.spb} bpm={p.bpm} /></div>
       <LoadError p={p} />
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
         <Sequencer p={p} bars={p.toque.compassos} spb={p.toque.spb} compact trecho={trechoOf(p)} />
@@ -97,7 +104,7 @@ function LandscapePlayer({ p, fs }) {
         {/* No previous/next here: the toque select does that, and its name needs the room. */}
         <PlayButton playing={p.playing} onToggle={p.setPlaying} size="sm" />
         <IconButton icon="rotate-cw" label="Repetir (loop)" variant="surface" size="lg" pressed={p.loop} onClick={() => p.setLoop(!p.loop)} />
-        <PraticaControls pr={p.pr} p={p} spb={p.toque.spb} icons />
+        <PraticaControls pr={p.pr} p={p} spb={p.toque.spb} bpm={p.bpm} icons />
         <FullscreenButton fs={fs} />
       </div>
       <LoadError p={p} />

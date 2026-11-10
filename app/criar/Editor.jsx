@@ -17,7 +17,8 @@ import { useFullscreen, useLandscapePhone, useMobile } from '@/lib/media'
 import { canRedo, canUndo, reducer } from '@/lib/historico'
 import * as M from '@/lib/meusToques'
 import { FullscreenButton, LoadError, PraticaControls, Sequencer } from '../ui'
-import { rangeOf, usePratica } from '@/lib/usePratica'
+import { bpmDe, rangeOf, usePratica, useRampa } from '@/lib/usePratica'
+import { dataFromHash, decodeToque, encodeToque, shareUrl } from '@/lib/link'
 
 const plural = (n) => `${n} ${n === 1 ? 'compasso' : 'compassos'}`
 const EMPTY = new Set()
@@ -35,6 +36,8 @@ export default function Editor({ instrumentos }) {
   const [sel, setSel] = useState(EMPTY)
   const [ajustes, setAjustes] = useState(false) // settings panel, phone lying down
   const [hasClip, setHasClip] = useState(!!clipboard)
+  const [aviso, setAviso] = useState(null) // { tone, text } after sharing
+  const [linkManual, setLinkManual] = useState('') // link to copy by hand when the browser blocks the clipboard
   const fileRef = useRef(null)
   const mobile = useMobile()
   const landscape = useLandscapePhone()
@@ -46,6 +49,27 @@ export default function Editor({ instrumentos }) {
     dispatch({ type: 'load', list })
     setCurId(list[0].id)
   }, [])
+
+  // A toque arriving in the link (#t=...): opened as a temporary toque until the student saves it.
+  const rowsRef = useRef(rows)
+  rowsRef.current = rows
+  useEffect(() => {
+    const receive = async () => {
+      const data = dataFromHash(location.hash)
+      if (!data) return
+      history.replaceState(null, '', location.pathname) // reloading must not import it again
+      try {
+        const doc = { ...M.parseImport(await decodeToque(data), rowsRef.current), temp: true }
+        dispatch({ type: 'add', doc })
+        setCurId(doc.id)
+      } catch {
+        setErro('Esse link não tem um toque válido. Peça para enviarem de novo.')
+      }
+    }
+    receive()
+    window.addEventListener('hashchange', receive)
+    return () => window.removeEventListener('hashchange', receive)
+  }, [])
   const list = state?.list
   useEffect(() => { if (list) setSaved(M.saveAll(list)) }, [list])
 
@@ -56,10 +80,11 @@ export default function Editor({ instrumentos }) {
   const rawTracks = useMemo(() => (doc ? M.toTracks(doc, rows) : []), [doc, rows])
   const pr = usePratica()
   const e = useEngine({
-    rawTracks, total, bpm: doc?.bpm ?? 120, perBeat, loop, instrumentos,
+    rawTracks, total, bpm: bpmDe(pr, doc?.bpm ?? 120), perBeat, loop, instrumentos,
     range: doc ? rangeOf(pr.trecho, spb, doc.compassos) : null, metro: pr.metro, countIn: pr.countIn,
     beatsPerBar: spb / perBeat,
   })
+  useRampa(pr, doc?.bpm ?? 120, e.pos, e.playing)
   useSpaceToPlay(e.togglePlay)
 
   // Keyboard shortcuts read the latest actions through a ref (the listener is registered once).
@@ -158,6 +183,21 @@ export default function Editor({ instrumentos }) {
     dispatch({ type: 'remove', id: curId, list: next })
     choose(next[0].id)
   }
+  const compartilhar = async () => {
+    const url = shareUrl(location.origin, await encodeToque(doc))
+    setLinkManual('')
+    try {
+      if (mobile && navigator.share) {
+        await navigator.share({ title: doc.nome, text: `Toque “${doc.nome}” no Fanfarra Studio`, url })
+        return
+      }
+      await navigator.clipboard.writeText(url)
+      setAviso({ tone: 'success', text: 'Link copiado! Cole numa conversa para enviar o toque.' })
+    } catch (err) {
+      if (err?.name === 'AbortError') return // closed the share sheet
+      setLinkManual(url) // no clipboard (http on the local network, old browser): show it to copy by hand
+    }
+  }
   const exportar = () => {
     const { id, ...data } = doc
     const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }))
@@ -214,6 +254,7 @@ export default function Editor({ instrumentos }) {
   )
   const fileActions = (
     <div style={{ display: 'flex', gap: 4, marginLeft: 'auto' }}>
+      <Button variant="ghost" size="sm" icon="send" onClick={compartilhar} disabled={!!doc.temp}>Compartilhar</Button>
       <Button variant="ghost" size="sm" onClick={exportar}>Exportar</Button>
       <Button variant="ghost" size="sm" onClick={() => fileRef.current.click()}>Importar</Button>
       <IconButton icon="trash-2" label="Excluir toque" size="sm" onClick={remove} />
@@ -272,6 +313,28 @@ export default function Editor({ instrumentos }) {
   )
   const banners = (
     <>
+      {doc.temp && (
+        <div role="status" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', margin: '0 16px 16px', padding: '12px 16px', borderRadius: 'var(--radius-lg)', background: 'var(--accent-soft)', border: '1px solid var(--accent)' }}>
+          <span style={{ flex: '1 1 240px', font: 'var(--type-body)' }}>Toque recebido por link: <strong>{doc.nome}</strong>. Ele ainda não está salvo.</span>
+          <Button size="md" icon="check" onClick={() => dispatch({ type: 'keep', id: curId })}>Salvar nos meus toques</Button>
+          <Button size="md" variant="ghost" onClick={() => {
+            const rest = list.filter((d) => d.id !== curId), next = rest.length ? rest : [M.novo(1)]
+            dispatch({ type: 'remove', id: curId, list: next }); choose(next[0].id)
+          }}>Descartar</Button>
+        </div>
+      )}
+      {aviso && (
+        <div style={{ padding: '0 16px 16px' }}>
+          <StatusMessage variant="banner" tone={aviso.tone} message={aviso.text} onDismiss={() => setAviso(null)} />
+        </div>
+      )}
+      {linkManual && (
+        <div style={{ display: 'grid', gap: 8, margin: '0 16px 16px' }}>
+          <span style={{ font: 'var(--type-caption)', color: 'var(--fg-2)' }}>Copie o link abaixo e envie:</span>
+          <input readOnly value={linkManual} onFocus={(ev) => ev.target.select()} aria-label="Link do toque"
+            style={{ font: 'var(--type-value)', padding: '10px 12px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-default)', background: 'var(--surface-card)', color: 'var(--fg-1)' }} />
+        </div>
+      )}
       <LoadError p={e} />
       {(erro || !saved) && (
         <div style={{ padding: '0 16px 16px' }}>
@@ -305,7 +368,7 @@ export default function Editor({ instrumentos }) {
             <div style={{ flex: '1 1 220px', minWidth: 0 }}>{nameInput}</div>
             {novoBtn}
             {settings}
-            <PraticaControls pr={pr} p={e} spb={spb} />
+            <PraticaControls pr={pr} p={e} spb={spb} bpm={doc.bpm} />
             {fileActions}
           </div>
         )}
@@ -332,13 +395,13 @@ export default function Editor({ instrumentos }) {
           {bpmSelect}
           {settings}
           {!mobile && <ToggleButton icon="rotate-cw" pressed={loop} onPressedChange={setLoop}>Loop</ToggleButton>}
-          {!mobile && <PraticaControls pr={pr} p={e} spb={spb} />}
+          {!mobile && <PraticaControls pr={pr} p={e} spb={spb} bpm={doc.bpm} />}
           {fileActions}
         </div>
       </header>
 
       <div style={{ display: 'flex', justifyContent: 'center', padding: mobile ? '20px 16px 20px 24px' : '20px 0' }}>{transport}</div>
-      {mobile && <div style={{ padding: '0 16px 16px' }}><PraticaControls pr={pr} p={e} spb={spb} /></div>}
+      {mobile && <div style={{ padding: '0 16px 16px' }}><PraticaControls pr={pr} p={e} spb={spb} bpm={doc.bpm} /></div>}
       <div style={{ padding: mobile ? '0 16px 16px' : '0 24px 16px 40px' }}>{editBar}</div>
       {banners}
       <div style={{ flex: mobile ? 'none' : 1, minHeight: 0, overflow: mobile ? 'visible' : 'auto', marginRight: mobile ? 0 : 16, background: 'var(--bg-sunken)' }}>
