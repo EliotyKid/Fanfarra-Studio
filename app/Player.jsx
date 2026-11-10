@@ -5,9 +5,13 @@ import { VolumeSlider } from '@ds/components/forms/VolumeSlider.jsx'
 import { ToggleButton } from '@ds/components/actions/ToggleButton.jsx'
 import { Icon } from '@ds/components/icons/Icon.jsx'
 import { TransportControls } from '@ds/components/player/TransportControls.jsx'
+import { PlayButton } from '@ds/components/actions/PlayButton.jsx'
+import { IconButton } from '@ds/components/actions/IconButton.jsx'
 import { usePlayer, useSpaceToPlay } from '@/lib/usePlayer'
 import { useFullscreen, useLandscapePhone, useMobile } from '@/lib/media'
-import { FullscreenButton, LoadError, Sequencer } from './ui'
+import { FullscreenButton, LoadError, PraticaControls, Sequencer } from './ui'
+
+const trechoOf = (p) => ({ bars: p.pr.trecho, onBars: (a, b) => p.pr.setTrecho([a, b]) })
 
 const meta = (p) => `${p.toque.compasso} · ${p.toque.compassos} compassos`
 const info = (p) => p.status === 'loading' ? 'Carregando sons…' : `${new Set(p.tracks.map((t) => t.inst)).size} instrumentos · ${meta(p)}`
@@ -24,6 +28,7 @@ function DesktopPlayer({ p, fs }) {
           <Select label="Toque" icon="list-music" value={p.idx} options={p.toqueOptions} onChange={p.setToque} />
           <Select label="Andamento" icon="music-2" value={p.bpm} options={p.bpmOptions} onChange={p.setBpm} />
           <ToggleButton icon="rotate-cw" pressed={p.loop} onPressedChange={p.setLoop}>Loop</ToggleButton>
+          <PraticaControls pr={p.pr} p={p} spb={p.toque.spb} />
         </div>
       </header>
       <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0' }}>
@@ -32,7 +37,7 @@ function DesktopPlayer({ p, fs }) {
       </div>
       <LoadError p={p} />
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto', marginRight: 16, background: 'var(--bg-sunken)' }}>
-        <Sequencer p={p} bars={p.toque.compassos} spb={p.toque.spb} />
+        <Sequencer p={p} bars={p.toque.compassos} spb={p.toque.spb} trecho={trechoOf(p)} />
       </div>
       <footer style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, minHeight: 72, padding: '0 24px 0 40px', borderTop: '1px solid var(--border-subtle)', background: 'var(--surface-panel)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--fg-2)', font: 'var(--type-body)' }}>
@@ -63,9 +68,10 @@ function MobilePlayer({ p, fs }) {
         <TransportControls size="sm" spread playing={p.playing} onPlayToggle={p.setPlaying} onPrev={p.prev} onNext={p.next}
           loop={p.loop} onLoopToggle={p.setLoop} />
       </div>
+      <div style={{ padding: '0 16px 16px' }}><PraticaControls pr={p.pr} p={p} spb={p.toque.spb} /></div>
       <LoadError p={p} />
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-        <Sequencer p={p} bars={p.toque.compassos} spb={p.toque.spb} compact />
+        <Sequencer p={p} bars={p.toque.compassos} spb={p.toque.spb} compact trecho={trechoOf(p)} />
       </div>
       <footer className="safe-bottom" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 12px 24px 16px', borderTop: '1px solid var(--border-subtle)' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -82,19 +88,21 @@ function MobilePlayer({ p, fs }) {
 function LandscapePlayer({ p, fs }) {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px 8px 16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px 8px 16px' }}>
+        {/* No title here: the toque select already shows the name, and width is tight. */}
         <div style={{ minWidth: 0, flex: '1 1 0' }}>
-          <h1 title={meta(p)} style={{ font: '700 17px/1.2 var(--font-display)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.toque.nome}</h1>
+          <Select label="Toque" icon="list-music" value={p.idx} options={p.toqueOptions} onChange={p.setToque} block />
         </div>
-        <Select label="Toque" icon="list-music" value={p.idx} options={p.toqueOptions} onChange={p.setToque} />
-        <Select label="Andamento" icon="music-2" value={p.bpm} options={p.bpmOptions} onChange={p.setBpm} />
-        <TransportControls size="sm" playing={p.playing} onPlayToggle={p.setPlaying} onPrev={p.prev} onNext={p.next}
-          loop={p.loop} onLoopToggle={p.setLoop} />
+        <Select label="Andamento" icon="music-2" value={p.bpm} options={p.bpmOptions} onChange={p.setBpm} renderValue={(o) => o?.value} />
+        {/* No previous/next here: the toque select does that, and its name needs the room. */}
+        <PlayButton playing={p.playing} onToggle={p.setPlaying} size="sm" />
+        <IconButton icon="rotate-cw" label="Repetir (loop)" variant="surface" size="lg" pressed={p.loop} onClick={() => p.setLoop(!p.loop)} />
+        <PraticaControls pr={p.pr} p={p} spb={p.toque.spb} icons />
         <FullscreenButton fs={fs} />
       </div>
       <LoadError p={p} />
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-        <Sequencer p={p} bars={p.toque.compassos} spb={p.toque.spb} compact dense />
+        <Sequencer p={p} bars={p.toque.compassos} spb={p.toque.spb} compact dense trecho={trechoOf(p)} />
       </div>
     </div>
   )

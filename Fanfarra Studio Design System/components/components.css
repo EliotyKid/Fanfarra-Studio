@@ -131,6 +131,7 @@ button.fs-status__trail:hover{background:var(--surface-hover)}
 .fs-seq__scroll{overflow-x:auto;overflow-y:hidden;min-width:0}
 .fs-seq__body{position:relative;min-width:100%;overflow:clip}
 .fs-seq__ruler{display:grid;height:var(--seq-ruler-h);background:var(--surface-panel);border-bottom:1px solid var(--border-subtle)}
+.fs-seq__range{position:absolute;top:0;height:var(--seq-ruler-h);background:var(--accent-soft);border-left:2px solid var(--accent);border-right:2px solid var(--accent);pointer-events:none}
 .fs-seq__ruler[data-seek]{cursor:pointer;touch-action:none;user-select:none}
 .fs-seq__ruler[data-seek]:hover{background:var(--surface-card)}
 .fs-seq__ruler[data-seek]:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--accent-ring)}

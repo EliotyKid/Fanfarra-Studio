@@ -2,6 +2,7 @@
 // Pieces shared by the Toques player and the Criar editor.
 import { useMemo, useRef } from 'react'
 import { IconButton } from '@ds/components/actions/IconButton.jsx'
+import { ToggleButton } from '@ds/components/actions/ToggleButton.jsx'
 import { StatusMessage } from '@ds/components/feedback/StatusMessage.jsx'
 import { StepSequencer } from '@ds/components/player/StepSequencer.jsx'
 import { toggleFullscreen, useCanFullscreen } from '@/lib/media'
@@ -20,6 +21,26 @@ export function LoadError({ p }) {
   )
 }
 
+// Practice toggles (see lib/usePratica): Trecho loops some bars (picked on the ruler), Metrônomo clicks every
+// beat, Contagem plays one bar of clicks before starting. icons: icon-only buttons for tight toolbars.
+export function PraticaControls({ pr, p, spb, icons }) {
+  const toggleTrecho = (on) => pr.setTrecho(on ? [Math.floor(p.pos / spb), Math.floor(p.pos / spb)] : null)
+  const trechoLabel = pr.trecho ? (pr.trecho[0] === pr.trecho[1] ? `Trecho: compasso ${pr.trecho[0] + 1}` : `Trecho: ${pr.trecho[0] + 1}–${pr.trecho[1] + 1}`) : 'Trecho'
+  const items = [
+    { icon: 'brackets', label: trechoLabel, hint: 'Repetir só alguns compassos (escolha na régua)', on: !!pr.trecho, set: toggleTrecho },
+    { icon: 'timer', label: 'Metrônomo', hint: 'Metrônomo', on: pr.metro, set: pr.setMetro },
+    { icon: 'hourglass', label: 'Contagem', hint: 'Contagem de um compasso antes de começar', on: pr.countIn, set: pr.setCountIn },
+  ]
+  return (
+    <div role="group" aria-label="Estudo" style={{ display: 'flex', alignItems: 'center', gap: icons ? 4 : 8, flexWrap: 'wrap' }}>
+      {items.map((it) => icons
+        ? <IconButton key={it.icon} icon={it.icon} label={it.on && it.icon === 'brackets' ? trechoLabel : it.hint} variant="surface" pressed={it.on} onClick={() => it.set(!it.on)} />
+        : <ToggleButton key={it.icon} icon={it.icon} pressed={it.on} onPressedChange={it.set} title={it.hint}>{it.label}</ToggleButton>)}
+      <span aria-live="polite" style={{ font: 'var(--type-caption)', color: 'var(--fg-accent)' }}>{p.counting ? 'Contando…' : ''}</span>
+    </div>
+  )
+}
+
 // Wider track headers than the DS default: they hold a solo button besides mute.
 const HEADS = { '--track-header-w': '260px', '--track-header-w-compact': '190px' }
 
@@ -33,7 +54,9 @@ const DENSE = { '--seq-row-h-compact': '32px', '--seq-ruler-h-compact': '30px' }
 
 // select (editor selection mode): { selected: Set<"rowId:step">, onRect(rowIds, s0, s1), onBars(b0, b1) }.
 // Then dragging on the grid selects a rectangle of hits, and the ruler selects whole bars instead of seeking.
-export function Sequencer({ p, bars, spb, compact, dense, onToggleStep, cellWidth, select }) {
+// trecho (loop part of the toque): { bars: [b0, b1] | null, onBars(b0, b1) }. While on, the ruler picks the bars.
+// Ruler priority: selection, then trecho, then seek.
+export function Sequencer({ p, bars, spb, compact, dense, onToggleStep, cellWidth, select, trecho }) {
   const selected = select?.selected
   const tracks = useMemo(() => {
     const byRow = new Map()
@@ -79,15 +102,22 @@ export function Sequencer({ p, bars, spb, compact, dense, onToggleStep, cellWidt
   const toggle = onToggleStep || ((id, i) => p.audition(id, i))
   const onCell = (id, i, on) => { if (!drag.current?.suppress) toggle(id, i, on) }
 
+  // Ruler drag over bars: the first bar touched is the anchor until the pointer is released.
   const barAnchor = useRef(null)
-  const selectBars = (step) => {
+  const tre = useRef(trecho)
+  tre.current = trecho
+  const barDrag = (cb) => (step) => {
     const bar = Math.floor(step / spb)
     if (barAnchor.current === null) {
       barAnchor.current = bar
       window.addEventListener('pointerup', () => { barAnchor.current = null }, { once: true })
     }
-    sel.current?.onBars(Math.min(barAnchor.current, bar), Math.max(barAnchor.current, bar))
+    cb(Math.min(barAnchor.current, bar), Math.max(barAnchor.current, bar))
   }
+  const onRuler = select ? barDrag((a, b) => sel.current?.onBars(a, b))
+    : trecho?.bars ? barDrag((a, b) => tre.current?.onBars(a, b))
+    : p.seek
+  const loopRange = trecho?.bars ? [trecho.bars[0] * spb, (trecho.bars[1] + 1) * spb] : undefined
   // Stopped, the playhead sits at pos (seek, stop). While playing the engine animates it on the compositor;
   // --ph stays put then, because changing it on this ancestor would restyle every grid cell each step.
   const style = { ...HEADS, ...(dense && DENSE), ...(!p.playing && { '--ph': p.pos / total }) }
@@ -95,7 +125,7 @@ export function Sequencer({ p, bars, spb, compact, dense, onToggleStep, cellWidt
     <div ref={p.phRef} style={style} className={select ? 'seq-select' : undefined} onPointerDown={select ? onPointerDown : undefined}>
       <StepSequencer compact={compact} tracks={tracks} bars={bars} stepsPerBar={spb} stepsPerBeat={p.perBeat}
         playhead={p.pos} playing={p.playing} minCellWidth={cellWidth ?? (compact ? 18 : 16)}
-        onToggleStep={onCell} onMuteToggle={p.toggleMute} onSoloToggle={p.toggleSolo} onSeek={select ? selectBars : p.seek} />
+        onToggleStep={onCell} onMuteToggle={p.toggleMute} onSoloToggle={p.toggleSolo} onSeek={onRuler} loopRange={loopRange} />
     </div>
   )
 }

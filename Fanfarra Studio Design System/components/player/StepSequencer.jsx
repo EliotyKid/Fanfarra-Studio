@@ -24,7 +24,7 @@ const Lane = React.memo(function Lane({ t, total, cols, stepsPerBar, stepsPerBea
 });
 
 // Playhead: an ancestor may set --ph (0..1) to move it smoothly every frame without re-rendering.
-export function StepSequencer({ tracks = [], bars = 4, stepsPerBar = 8, stepsPerBeat = 2, playhead = null, playing = false, onToggleStep, onMuteToggle, onSoloToggle, onSeek, compact = false, minCellWidth, followPlayhead = true, className = '', style }) {
+export function StepSequencer({ tracks = [], bars = 4, stepsPerBar = 8, stepsPerBeat = 2, playhead = null, playing = false, onToggleStep, onMuteToggle, onSoloToggle, onSeek, loopRange, compact = false, minCellWidth, followPlayhead = true, className = '', style }) {
   const total = bars * stepsPerBar;
   const minCell = minCellWidth ?? (compact ? 18 : 20);
   const cur = playhead == null ? -1 : Math.floor(playhead) % total;
@@ -75,6 +75,8 @@ export function StepSequencer({ tracks = [], bars = 4, stepsPerBar = 8, stepsPer
           <div className="fs-seq__ruler" style={{ gridTemplateColumns: 'repeat(' + bars + ',minmax(0,1fr))' }} {...seekProps}>
             {Array.from({ length: bars }, (_, b) => <div key={b} className="fs-seq__bar">{b + 1}</div>)}
           </div>
+          {/* Optional loop range [startStep, endStep): band over the ruler. */}
+          {loopRange && <div className="fs-seq__range" aria-hidden="true" style={{ left: (loopRange[0] / total) * 100 + '%', width: ((loopRange[1] - loopRange[0]) / total) * 100 + '%' }}></div>}
           <div className="fs-seq__lanes">
             {tracks.map((t) => (
               <Lane key={t.id} t={t} total={total} cols={cols} stepsPerBar={stepsPerBar} stepsPerBeat={stepsPerBeat}

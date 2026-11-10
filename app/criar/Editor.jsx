@@ -16,7 +16,8 @@ import { bpmOptions, useEngine, useSpaceToPlay } from '@/lib/useEngine'
 import { useFullscreen, useLandscapePhone, useMobile } from '@/lib/media'
 import { canRedo, canUndo, reducer } from '@/lib/historico'
 import * as M from '@/lib/meusToques'
-import { FullscreenButton, LoadError, Sequencer } from '../ui'
+import { FullscreenButton, LoadError, PraticaControls, Sequencer } from '../ui'
+import { rangeOf, usePratica } from '@/lib/usePratica'
 
 const plural = (n) => `${n} ${n === 1 ? 'compasso' : 'compassos'}`
 const EMPTY = new Set()
@@ -53,7 +54,12 @@ export default function Editor({ instrumentos }) {
   const perBeat = doc ? M.subdivOf(doc) : 4
   const total = doc ? doc.compassos * spb : 16
   const rawTracks = useMemo(() => (doc ? M.toTracks(doc, rows) : []), [doc, rows])
-  const e = useEngine({ rawTracks, total, bpm: doc?.bpm ?? 120, perBeat, loop, instrumentos })
+  const pr = usePratica()
+  const e = useEngine({
+    rawTracks, total, bpm: doc?.bpm ?? 120, perBeat, loop, instrumentos,
+    range: doc ? rangeOf(pr.trecho, spb, doc.compassos) : null, metro: pr.metro, countIn: pr.countIn,
+    beatsPerBar: spb / perBeat,
+  })
   useSpaceToPlay(e.togglePlay)
 
   // Keyboard shortcuts read the latest actions through a ref (the listener is registered once).
@@ -84,7 +90,7 @@ export default function Editor({ instrumentos }) {
   const edit = (fn, tag) => dispatch({ type: 'edit', id: curId, fn, tag, at: Date.now() })
   // Selection ops compute { doc, sel } from the current doc, then commit both.
   const apply = (op) => { const r = op(doc); edit(() => r.doc); setSel(r.sel) }
-  const choose = (id) => { setCurId(id); setSel(EMPTY); e.resetPos() }
+  const choose = (id) => { setCurId(id); setSel(EMPTY); pr.setTrecho(null); e.resetPos() }
   const add = (d) => { dispatch({ type: 'add', doc: d }); choose(d.id) }
   const idx = list.findIndex((d) => d.id === curId)
   const step = (k) => choose(list[(idx + k + list.length) % list.length].id)
@@ -278,7 +284,8 @@ export default function Editor({ instrumentos }) {
     </>
   )
   const grid = (cellWidth, dense) => (
-    <Sequencer p={e} bars={doc.compassos} spb={spb} compact={mobile} dense={dense} onToggleStep={toggleStep} cellWidth={cellWidth} select={selectProps} />
+    <Sequencer p={e} bars={doc.compassos} spb={spb} compact={mobile} dense={dense} onToggleStep={toggleStep} cellWidth={cellWidth} select={selectProps}
+      trecho={{ bars: pr.trecho, onBars: (a, b) => pr.setTrecho([a, b]) }} />
   )
 
   // ---------- phone lying down: controls on top, grid fills the rest (like the Toques player) ----------
@@ -298,6 +305,7 @@ export default function Editor({ instrumentos }) {
             <div style={{ flex: '1 1 220px', minWidth: 0 }}>{nameInput}</div>
             {novoBtn}
             {settings}
+            <PraticaControls pr={pr} p={e} spb={spb} />
             {fileActions}
           </div>
         )}
@@ -324,11 +332,13 @@ export default function Editor({ instrumentos }) {
           {bpmSelect}
           {settings}
           {!mobile && <ToggleButton icon="rotate-cw" pressed={loop} onPressedChange={setLoop}>Loop</ToggleButton>}
+          {!mobile && <PraticaControls pr={pr} p={e} spb={spb} />}
           {fileActions}
         </div>
       </header>
 
       <div style={{ display: 'flex', justifyContent: 'center', padding: mobile ? '20px 16px 20px 24px' : '20px 0' }}>{transport}</div>
+      {mobile && <div style={{ padding: '0 16px 16px' }}><PraticaControls pr={pr} p={e} spb={spb} /></div>}
       <div style={{ padding: mobile ? '0 16px 16px' : '0 24px 16px 40px' }}>{editBar}</div>
       {banners}
       <div style={{ flex: mobile ? 'none' : 1, minHeight: 0, overflow: mobile ? 'visible' : 'auto', marginRight: mobile ? 0 : 16, background: 'var(--bg-sunken)' }}>
