@@ -1,0 +1,34 @@
+html, body { height: 100%; }
+/* dvh: mobile browser toolbars no longer cover the bottom of the app. */
+body { height: 100dvh; overflow: hidden; background: var(--bg-app); }
+/* No double-tap zoom or tap delay on controls and grid cells. */
+button, [role=slider] { touch-action: manipulation; }
+
+/* ---------- App shell: desktop sidebar frame, mobile header + drawer ---------- */
+.shell { height: 100%; padding: 24px; background: var(--bg-app); }
+.shell[data-fs="true"] { padding: 0; }
+.shell__frame { height: 100%; display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); box-shadow: var(--shadow-panel); overflow: hidden; }
+.shell[data-fs="true"] .shell__frame { border-radius: 0; }
+.shell__side { display: flex; flex-direction: column; border-right: 1px solid var(--border-subtle); min-height: 0; }
+.shell__main { display: flex; min-width: 0; min-height: 0; overflow: auto; }
+.shell__top, .shell__scrim, .shell__drawer { display: none; }
+
+@media (max-width: 759px) {
+  .shell { position: relative; display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+  .shell__top { display: flex; align-items: center; justify-content: space-between; padding: calc(10px + env(safe-area-inset-top)) 12px 10px 18px; border-bottom: 1px solid var(--border-subtle); }
+  .shell__frame { flex: 1; min-height: 0; display: flex; border: 0; border-radius: 0; box-shadow: none; }
+  .shell__side { display: none; }
+  .shell__main { flex: 1; flex-direction: column; }
+  .shell__scrim { display: block; position: absolute; inset: 0; z-index: 80; background: rgba(5, 5, 10, .6); backdrop-filter: blur(2px); opacity: 0; pointer-events: none; transition: opacity var(--dur-slow) var(--ease-out); }
+  .shell__scrim[data-open="true"] { opacity: 1; pointer-events: auto; }
+  .shell__drawer { display: flex; flex-direction: column; position: absolute; top: 0; right: 0; bottom: 0; z-index: 81; width: 78%; max-width: 320px; padding: calc(56px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom)); background: var(--surface-panel); border-left: 1px solid var(--border-subtle); box-shadow: var(--shadow-pop); transform: translateX(105%); transition: transform var(--dur-slow) var(--ease-out); }
+  .shell__drawer[data-open="true"] { transform: none; }
+}
+
+/* Bottom bars clear the iPhone home indicator. */
+.safe-bottom { padding-bottom: calc(16px + env(safe-area-inset-bottom)) !important; }
+
+/* Editable toque title: reads as a heading, shows its box on hover/focus. */
+.fs-title-input { width: 100%; max-width: 560px; margin-left: -9px; padding: 2px 8px; color: var(--fg-1); background: transparent; border: 1px solid transparent; border-radius: var(--radius-md); transition: border-color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out); }
+.fs-title-input:hover { border-color: var(--border-default); }
+.fs-title-input:focus { outline: none; border-color: var(--accent); background: var(--surface-card); box-shadow: var(--focus-ring); }

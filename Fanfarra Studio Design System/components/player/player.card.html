@@ -1,0 +1,26 @@
+<!-- @dsCard group="Components" viewport="700x440" name="Player" subtitle="TransportControls · TrackHeader · StepSequencer" -->
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Player</title><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{padding:20px 24px}.lbl{font:400 11px/1 var(--font-mono);color:var(--fg-3);margin-bottom:8px}.r{display:flex;flex-wrap:wrap;align-items:center;gap:12px}.st{display:grid;gap:18px}</style></head>
+<body><div id="root"></div><script type="text/babel">
+const NS = window.FanfarraStudioDesignSystem_fca01a;
+
+const { TransportControls, StepSequencer, TrackHeader } = NS;
+const P={bumbo:[0,6,8,14,20,24,28],prato:[2,3,10,16,22,29],tarol:[0,4,6,8,10,12,14,18,20,24,26,30],surdo:[2,8,16,24],repique:[6,12,20,22,28,30]};
+const N={bumbo:'Bumbo',prato:'Prato',tarol:'Tarol',surdo:'Surdo',repique:'Repique'};
+function Demo(){
+  const [tracks,setTracks]=React.useState(Object.keys(P).map(id=>({id,name:N[id],color:'var(--inst-'+id+')',steps:Array.from({length:32},(_,i)=>P[id].includes(i))})));
+  const [playing,setPlaying]=React.useState(true); const [ph,setPh]=React.useState(0);
+  React.useEffect(()=>{ if(!playing) return; let raf,t0=performance.now()-ph*125; const tick=t=>{setPh(((t-t0)/125)%32); raf=requestAnimationFrame(tick)}; raf=requestAnimationFrame(tick); return ()=>cancelAnimationFrame(raf); },[playing]);
+  return <div className="st" style={{gap:16}}>
+    <div className="r" style={{justifyContent:'space-between'}}><TransportControls playing={playing} onPlayToggle={setPlaying}/><div style={{width:300}}><TransportControls size="sm" spread playing={playing} onPlayToggle={setPlaying} loop onLoopToggle={()=>{}}/></div></div>
+    <div style={{margin:'0 -24px'}}><StepSequencer tracks={tracks} playhead={ph} playing={playing}
+      onToggleStep={(id,i,on)=>setTracks(ts=>ts.map(t=>t.id===id?{...t,steps:t.steps.map((s,j)=>j===i?on:s)}:t))}
+      onMuteToggle={(id,m)=>setTracks(ts=>ts.map(t=>t.id===id?{...t,muted:m}:t))}/></div>
+  </div>;
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script></body></html>

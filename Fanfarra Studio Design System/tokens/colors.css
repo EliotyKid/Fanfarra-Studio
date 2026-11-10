@@ -1,0 +1,74 @@
+/* Fanfarra Studio — color tokens. Dark-only UI. Hex values marked (ref) are labelled in the reference board. */
+:root{
+/* Brand violet */
+--violet-300:#C4B5FD;
+--violet-400:#A78BFA;/* (ref) Primary Light */
+--violet-500:#8B5CF6;/* (ref) Primary */
+--violet-600:#7C3AED;
+--violet-700:#6D28D9;
+--violet-950:#2A1B5C;
+
+/* Ink neutrals (cool, slightly violet-tinted) */
+--ink-1000:#0B0B11;
+--ink-950:#101018;/* (ref) Background */
+--ink-925:#13131C;
+--ink-900:#16161F;
+--ink-850:#1A1A24;/* (ref) Surface */
+--ink-800:#22222E;
+--ink-750:#2E2E3E;/* (ref) Border */
+--ink-700:#3D3D50;
+--ink-600:#55566A;
+--ink-500:#80818F;
+--ink-400:#A3A4AF;
+--ink-200:#D6D7DE;
+--ink-50:#F5F5F8;
+
+/* Instrument colors (ref) — one per fanfarra voice */
+--inst-bumbo:#F59E0B;
+--inst-prato:#38BDF8;
+--inst-tarol:#22C55E;
+--inst-surdo:#A855F7;
+--inst-repique:#EC4899;
+
+/* Semantic status (ref: Estados panel) */
+--success:#22C55E;
+--warning:#F59E0B;
+--danger:#EC4899;
+--success-soft:rgba(34,197,94,.14);
+--warning-soft:rgba(245,158,11,.14);
+--danger-soft:rgba(236,72,153,.14);
+
+/* ---------- Semantic aliases ---------- */
+--bg-app:var(--ink-950);
+--bg-sunken:var(--ink-925);
+--surface-panel:var(--ink-900);
+--surface-card:var(--ink-850);
+--surface-raised:var(--ink-800);
+--surface-hover:rgba(255,255,255,.04);
+--surface-press:rgba(255,255,255,.07);
+
+--border-subtle:var(--ink-800);
+--border-default:var(--ink-750);
+--border-strong:var(--ink-700);
+
+--fg-1:var(--ink-50);
+--fg-2:var(--ink-400);
+--fg-3:var(--ink-500);
+--fg-disabled:var(--ink-600);
+--fg-on-accent:#FFFFFF;
+--fg-accent:var(--violet-400);
+
+--accent:var(--violet-500);
+--accent-hover:#9A70F8;
+--accent-press:var(--violet-600);
+--accent-soft:rgba(139,92,246,.20);
+--accent-soft-hover:rgba(139,92,246,.28);
+--accent-ring:rgba(167,139,250,.65);
+
+--grid-line-bar:var(--ink-750);
+--grid-line-beat:rgba(255,255,255,.06);
+--grid-line-step:rgba(255,255,255,.03);
+--grid-row:var(--ink-900);
+--grid-row-alt:var(--ink-925);
+--playhead:var(--violet-500);
+}

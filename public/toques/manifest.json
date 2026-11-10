@@ -1,0 +1,85 @@
+{
+  "toques": [
+    {
+      "id": "vale-old",
+      "nome": "Vale Old",
+      "arquivo": "toques/vale-old.mid",
+      "bpm": 170.0,
+      "compasso": "4/4",
+      "compassos": 8
+    },
+    {
+      "id": "toque-1",
+      "nome": "Toque 1",
+      "arquivo": "toques/toque-1.mid",
+      "bpm": 170.0,
+      "compasso": "4/4",
+      "compassos": 4
+    }
+  ],
+  "instrumentos": {
+    "Tarol": {
+      "37": {
+        "pad": "SideStick",
+        "rotulo": "Aro",
+        "samples": [
+          "samples/tarol/FPC_SdSt_C_001.wav",
+          "samples/tarol/FPC_SdSt_C_002.wav",
+          "samples/tarol/FPC_SdSt_C_003.wav",
+          "samples/tarol/FPC_SdSt_C_004.wav"
+        ]
+      },
+      "40": {
+        "pad": "Snare 2",
+        "rotulo": "Pele",
+        "samples": [
+          "samples/tarol/FPC_Snr_2lI01.wav",
+          "samples/tarol/FPC_Snr_2lI02.wav",
+          "samples/tarol/FPC_Snr_2lI03.wav",
+          "samples/tarol/FPC_Snr_2lI04.wav"
+        ]
+      }
+    },
+    "Bumbo": {
+      "45": {
+        "pad": "Lo Tom",
+        "rotulo": "Lo Tom",
+        "samples": [
+          "samples/bumbo/FPC_Tom_GtomLow_001.wav",
+          "samples/bumbo/FPC_Tom_GtomLow_002.wav"
+        ]
+      }
+    },
+    "Surdo": {
+      "47": {
+        "pad": "Mid Tom",
+        "rotulo": "Mid Tom",
+        "samples": [
+          "samples/surdo/FPC_Tom_GtomMid_001.wav",
+          "samples/surdo/FPC_Tom_GtomMid_002.wav"
+        ]
+      }
+    },
+    "Prato": {
+      "49": {
+        "pad": "Crash",
+        "rotulo": "Crash",
+        "samples": [
+          "samples/prato/FPC_Crash_G18InMed_01.wav",
+          "samples/prato/FPC_Crash_G18InMed_02.wav",
+          "samples/prato/FPC_Crash_G18InMed_03.wav"
+        ]
+      }
+    },
+    "Repique": {
+      "48": {
+        "pad": "Hi Tom",
+        "rotulo": "Hi Tom",
+        "samples": [
+          "samples/repique/FPC_Tom_GtomHi_001.wav",
+          "samples/repique/FPC_Tom_GtomHi_002.wav"
+        ]
+      }
+    }
+  }
+}

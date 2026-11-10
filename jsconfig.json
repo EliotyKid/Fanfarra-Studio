@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"],
+      "@ds/*": ["./Fanfarra Studio Design System/*"]
+    }
+  }
+}

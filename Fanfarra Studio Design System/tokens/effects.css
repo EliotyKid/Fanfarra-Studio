@@ -1,0 +1,23 @@
+/* Fanfarra Studio — elevation, glow, focus and motion. */
+:root{
+--shadow-panel:inset 0 1px 0 rgba(255,255,255,.03),0 12px 32px rgba(0,0,0,.32);
+--shadow-pop:0 16px 40px rgba(0,0,0,.5),0 0 0 1px var(--border-default);
+--shadow-accent:0 6px 20px rgba(139,92,246,.38);
+--shadow-accent-lg:0 8px 32px rgba(139,92,246,.5);
+--shadow-step-glow:0 0 12px rgba(255,255,255,.12);
+--focus-ring:0 0 0 2px var(--bg-app),0 0 0 4px var(--accent-ring);
+
+--ease-out:cubic-bezier(.2,.8,.2,1);/* @kind other */
+--ease-in-out:cubic-bezier(.4,0,.2,1);/* @kind other */
+--dur-instant:80ms;/* @kind other */
+--dur-fast:120ms;/* @kind other */
+--dur-base:180ms;/* @kind other */
+--dur-slow:280ms;/* @kind other */
+
+--z-base:0;/* @kind other */
+--z-sticky:10;/* @kind other */
+--z-playhead:5;/* @kind other */
+--z-popover:50;/* @kind other */
+--z-drawer:80;/* @kind other */
+--z-modal:100;/* @kind other */
+}

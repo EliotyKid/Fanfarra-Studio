@@ -1,0 +1,45 @@
+/* Fanfarra Studio — type tokens. Montserrat = titles & primary text. JetBrains Mono = values, BPM, markings. */
+:root{
+--font-display:'Montserrat',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
+--font-body:'Montserrat',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
+--font-mono:'JetBrains Mono',ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
+
+--text-2xs:11px;
+--text-xs:12px;
+--text-sm:13px;
+--text-base:15px;
+--text-md:16px;
+--text-lg:18px;
+--text-xl:20px;
+--text-2xl:24px;
+--text-3xl:32px;
+--text-4xl:44px;
+--text-5xl:64px;
+
+--weight-regular:400;
+--weight-medium:500;
+--weight-semibold:600;
+--weight-bold:700;
+--weight-black:800;
+
+--leading-tight:1.15;
+--leading-snug:1.3;
+--leading-body:1.5;
+
+--tracking-tight:-0.01em;
+--tracking-normal:0;
+--tracking-mono:0.02em;
+--tracking-caps:0.08em;
+
+/* Semantic roles */
+--type-display:800 var(--text-5xl)/1.05 var(--font-display);
+--type-title:700 var(--text-3xl)/var(--leading-tight) var(--font-display);
+--type-heading:700 var(--text-xl)/var(--leading-snug) var(--font-display);
+--type-subheading:600 var(--text-lg)/var(--leading-snug) var(--font-display);
+--type-body:400 var(--text-base)/var(--leading-body) var(--font-body);
+--type-label:500 var(--text-base)/1.2 var(--font-body);
+--type-caption:400 var(--text-sm)/1.4 var(--font-body);
+--type-value:500 var(--text-base)/1.2 var(--font-mono);
+--type-meta:400 var(--text-base)/1.3 var(--font-mono);
+--type-marker:500 var(--text-sm)/1 var(--font-mono);
+}

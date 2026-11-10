@@ -1,0 +1,26 @@
+<!-- @dsCard group="Components" viewport="700x300" name="Status messages" subtitle="Sucesso · Aviso · Erro — inline and banner" -->
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Status messages</title><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{padding:20px 24px}.lbl{font:400 11px/1 var(--font-mono);color:var(--fg-3);margin-bottom:8px}.r{display:flex;flex-wrap:wrap;align-items:center;gap:12px}.st{display:grid;gap:18px}</style></head>
+<body><div id="root"></div><script type="text/babel">
+const NS = window.FanfarraStudioDesignSystem_fca01a;
+
+const { StatusMessage } = NS;
+function Demo(){
+  const [show,setShow]=React.useState(true);
+  return <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:32}}>
+    <div><div className="lbl">inline</div>
+      <StatusMessage tone="success" title="Sucesso" message="Operação realizada!"/>
+      <StatusMessage tone="warning" title="Aviso" message="Atenção necessária."/>
+      <StatusMessage tone="danger" title="Erro" message="Algo deu errado."/></div>
+    <div className="st" style={{alignContent:'start',gap:10}}><div className="lbl" style={{marginBottom:0}}>banner · dismissible</div>
+      {show ? <StatusMessage variant="banner" tone="danger" title="Áudio bloqueado" message="Toque no play para liberar o som." onDismiss={()=>setShow(false)}/> : <button className="fs-btn fs-btn--secondary fs-btn--sm" onClick={()=>setShow(true)}>Mostrar de novo</button>}
+      <StatusMessage variant="banner" tone="success" title="Toque salvo" message="Marcha de Entrada · 120 BPM."/>
+      <StatusMessage variant="banner" tone="warning" title="Compasso alterado" message="Passos fora do compasso foram removidos."/></div>
+  </div>;
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script></body></html>

@@ -1,0 +1,45 @@
+/* Fanfarra Studio — spacing, radii and layout metrics. 4px base. */
+:root{
+--space-0:0;
+--space-0-5:2px;
+--space-1:4px;
+--space-1-5:6px;
+--space-2:8px;
+--space-2-5:10px;
+--space-3:12px;
+--space-4:16px;
+--space-5:20px;
+--space-6:24px;
+--space-8:32px;
+--space-10:40px;
+--space-12:48px;
+--space-16:64px;
+
+--radius-xs:4px;/* step blocks */
+--radius-sm:6px;/* track headers, small chips */
+--radius-md:10px;/* nav items, swatches */
+--radius-lg:12px;/* buttons, selects, toggles */
+--radius-xl:16px;/* panels, cards */
+--radius-2xl:24px;/* app frame */
+--radius-full:999px;
+
+/* Control + layout metrics (from the reference board) */
+--control-h-sm:34px;
+--control-h:42px;
+--control-h-lg:46px;
+--transport-h:52px;
+--transport-h-sm:44px;
+--play-h:58px;
+--play-h-sm:48px;
+--nav-item-h:52px;
+--sidebar-w:180px;
+--track-header-w:180px;
+--track-header-w-compact:140px;
+--seq-row-h:56px;
+--seq-row-h-compact:44px;
+--seq-ruler-h:56px;
+--seq-ruler-h-compact:40px;
+--icon-sm:16px;
+--icon-md:20px;
+--icon-lg:24px;
+}
