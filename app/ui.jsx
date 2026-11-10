@@ -34,8 +34,8 @@ const DENSE = { '--seq-row-h-compact': '34px', '--seq-ruler-h-compact': '30px' }
 export function Sequencer({ p, bars, spb, compact, dense, onToggleStep, cellWidth }) {
   const tracks = useMemo(() => p.tracks.map((t) => ({ ...t, levels: t.steps.map(level) })), [p.tracks])
   const total = bars * spb
-  // Stopped, the playhead sits at pos (seek, stop). While playing the engine sets --ph on the playhead itself:
-  // changing it here, on an ancestor, would restyle all grid cells every step.
+  // Stopped, the playhead sits at pos (seek, stop). While playing the engine animates it on the compositor;
+  // --ph stays put then, because changing it on this ancestor would restyle every grid cell each step.
   const style = { ...HEADS, ...(dense && DENSE), ...(!p.playing && { '--ph': p.pos / total }) }
   return (
     <div ref={p.phRef} style={style}>

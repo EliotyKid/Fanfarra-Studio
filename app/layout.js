@@ -12,7 +12,8 @@ export const viewport = { width: 'device-width', initialScale: 1, viewportFit: '
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="pt-BR">
+    // Browser extensions add attributes to <html> before React loads; ignore those (this element only, not its children).
+    <html lang="pt-BR" suppressHydrationWarning>
       <body>
         <Shell>{children}</Shell>
       </body>

@@ -140,13 +140,16 @@ button.fs-status__trail:hover{background:var(--surface-hover)}
 .fs-seq__cell[data-beat="true"]{border-left-color:var(--grid-line-beat)}
 .fs-seq__cell[data-bar="true"]{border-left-color:var(--grid-line-bar)}
 .fs-seq__cell:focus-visible{box-shadow:inset 0 0 0 2px var(--accent-ring)}
-.fs-seq__block{position:absolute;left:3px;right:3px;top:50%;height:calc(22px * var(--level,1));margin-top:calc(-11px * var(--level,1));border-radius:var(--radius-xs);background:currentColor;opacity:0;transform:scale(.85);transition:opacity var(--dur-fast) var(--ease-out),transform var(--dur-fast) var(--ease-out),filter var(--dur-fast);pointer-events:none}
-.fs-seq__cell:hover .fs-seq__block{opacity:.22;transform:none}
-.fs-seq__cell[aria-pressed="true"] .fs-seq__block{opacity:1;transform:none;box-shadow:0 0 12px color-mix(in oklab,currentColor 35%,transparent)}
-.fs-seq__cell[aria-pressed="true"]:hover .fs-seq__block{filter:brightness(1.12)}
-.fs-seq__cell[data-hit="true"] .fs-seq__block{filter:brightness(1.35);transform:scaleY(1.18);box-shadow:0 0 18px color-mix(in oklab,currentColor 70%,transparent)}
-.fs-seq__lane[data-muted="true"] .fs-seq__cell[aria-pressed="true"] .fs-seq__block{opacity:.28;box-shadow:none}
-/* Full-width layer moved with transform (inline, from --ph): the GPU slides it without repainting the grid. */
+/* Blocks use paint-only styling (background, box-shadow). No opacity/transform/filter: on hundreds of
+   cells those become compositor effects, re-evaluated every frame while the playhead moves. */
+.fs-seq__block{position:absolute;left:3px;right:3px;top:50%;height:calc(22px * var(--level,1));margin-top:calc(-11px * var(--level,1));border-radius:var(--radius-xs);background:transparent;pointer-events:none}
+.fs-seq__cell:hover .fs-seq__block{background:color-mix(in oklab,currentColor 22%,transparent);transition:background-color var(--dur-fast) var(--ease-out)}
+.fs-seq__cell[aria-pressed="true"] .fs-seq__block{background:currentColor;box-shadow:0 0 12px color-mix(in oklab,currentColor 35%,transparent)}
+.fs-seq__cell[aria-pressed="true"]:hover .fs-seq__block{background:color-mix(in oklab,currentColor 88%,white)}
+.fs-seq__cell[data-hit="true"] .fs-seq__block{background:color-mix(in oklab,currentColor 65%,white);box-shadow:0 0 18px color-mix(in oklab,currentColor 70%,transparent)}
+.fs-seq__lane[data-muted="true"] .fs-seq__cell[aria-pressed="true"] .fs-seq__block{background:color-mix(in oklab,currentColor 28%,transparent);box-shadow:none}
+/* Full-width layer moved with transform. While playing the app animates it with the Web Animations API,
+   which runs on the compositor: no main-thread work per frame, whatever the grid size. */
 .fs-seq__playhead{position:absolute;top:0;bottom:0;left:0;width:100%;pointer-events:none;z-index:var(--z-playhead);will-change:transform}
 .fs-seq__playhead::after{content:"";position:absolute;top:0;bottom:0;left:-1px;width:2px;background:var(--playhead);box-shadow:0 0 8px rgba(139,92,246,.6)}
 .fs-seq__playhead::before{content:"";position:absolute;left:0;top:calc(var(--seq-ruler-h) * .62);width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--playhead)}
