@@ -99,7 +99,18 @@ export default function Editor({ instrumentos }) {
       const run = (fn) => { ev.preventDefault(); fn() }
       const hitRow = HIT_KEYS.indexOf(key)
       if (hitRow >= 0 && !mod && !ev.altKey) { ev.preventDefault(); if (!ev.repeat) k.hitKey(hitRow); return }
-      if (ev.target.closest?.('[role=slider]')) return // the ruler and sliders use the arrows themselves
+      // Playhead: arrows one step, Shift a beat, Ctrl a bar; Home/End. Also replaces the ruler's own keys,
+      // so it behaves the same wherever the focus is. With hits selected, the arrows move them instead.
+      const ruler = ev.target.closest?.('[data-seek]')
+      if (ev.target.closest?.('[role=slider]') && !ruler) return // volume and other sliders keep their arrows
+      const dir = key === 'arrowleft' ? -1 : key === 'arrowright' ? 1 : 0
+      if (!ev.altKey && (key === 'home' || key === 'end' || (dir && (ruler || !k.hasSel)))) {
+        ev.preventDefault(); ev.stopPropagation()
+        if (key === 'home' || key === 'end') k.seekTo(key === 'home' ? 0 : Infinity)
+        else k.nav(dir, mod ? k.spb : ev.shiftKey ? k.perBeat : 1)
+        return
+      }
+      if (ruler) return
       if (mod && key === 'z') run(ev.shiftKey ? k.redo : k.undo)
       else if (mod && key === 'y') run(k.redo)
       else if (mod && key === 'a') run(k.selectAll)
@@ -111,8 +122,9 @@ export default function Editor({ instrumentos }) {
       else if ((key === 'arrowleft' || key === 'arrowright') && k.hasSel) run(() => k.move((key === 'arrowleft' ? -1 : 1) * (ev.shiftKey ? k.perBeat : 1)))
       else if (key === 'escape' && k.hasSel) run(k.clear)
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    // Capture phase: runs before the ruler's own key handler, which then never sees the arrows.
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
   }, [])
 
   if (!doc || mobile === null) return null
@@ -130,8 +142,14 @@ export default function Editor({ instrumentos }) {
 
   const hasSel = sel.size > 0
   const copy = () => { clipboard = M.copySel(doc, sel); setHasClip(!!clipboard) }
+  const seekTo = (s) => e.seek(Math.max(0, Math.min(total - 1, s)))
   const actions = {
-    hasSel, perBeat, undo, redo,
+    hasSel, perBeat, spb, undo, redo, seekTo,
+    // Moves the playhead `size` steps; for a beat or bar it lands on the start of the previous/next one.
+    nav: (dir, size) => {
+      const from = Math.floor(e.pos)
+      seekTo(size === 1 ? from + dir : dir > 0 ? (Math.floor(from / size) + 1) * size : (Math.ceil(from / size) - 1) * size)
+    },
     selectAll: () => { setSelecting(true); setSel(M.selectAll(doc)) },
     clear: () => setSel(EMPTY),
     copy,
@@ -141,13 +159,15 @@ export default function Editor({ instrumentos }) {
     move: (k) => apply((d) => M.moveSel(d, sel, k)),
     duplicate: () => apply((d) => M.duplicateSel(d, sel)),
     repeat: () => apply((d) => M.repeatSel(d, sel)),
-    // A S D F G H: a hit of the chosen strength on that row at the playhead (kept if already there), and its sound.
+    // A S D F G H: on that row at the playhead, adds a hit of the chosen strength (and plays it),
+    // or deletes the hit already there, whatever its strength.
     hitKey: (n) => {
       const row = rows[n]
       if (!row) return
-      const i = e.stepNow(), hit = M.hitFor(row, forca)
-      if (M.velAt(doc, row.id, i) !== forca) edit((d) => M.applyHit(d, row.id, i, forca))
-      e.audition(row.id, i, hit)
+      const i = e.stepNow()
+      const removing = M.velAt(doc, row.id, i) !== undefined
+      edit((d) => M.applyHit(d, row.id, i, M.velAt(d, row.id, i) ?? forca))
+      if (!removing) e.audition(row.id, i, M.hitFor(row, forca))
     },
   }
   keys.current = actions
