@@ -60,7 +60,8 @@ const DENSE = { '--seq-row-h-compact': '32px', '--seq-ruler-h-compact': '30px' }
 // Then dragging on the grid selects a rectangle of hits, and the ruler selects whole bars instead of seeking.
 // trecho (loop part of the toque): { bars: [b0, b1] | null, onBars(b0, b1) }. While on, the ruler picks the bars.
 // Ruler priority: selection, then trecho, then seek.
-export function Sequencer({ p, bars, spb, compact, dense, onToggleStep, cellWidth, select, trecho }) {
+// keyHints ({ rowId: letter }) shows each row's keyboard shortcut; onTrackPlay(rowId) makes the names play the instrument.
+export function Sequencer({ p, bars, spb, compact, dense, onToggleStep, cellWidth, select, trecho, keyHints, onTrackPlay }) {
   const selected = select?.selected
   const tracks = useMemo(() => {
     const byRow = new Map()
@@ -69,8 +70,8 @@ export function Sequencer({ p, bars, spb, compact, dense, onToggleStep, cellWidt
       if (!byRow.has(id)) byRow.set(id, new Set())
       byRow.get(id).add(Number(k.slice(c + 1)))
     }
-    return p.tracks.map((t) => ({ ...t, levels: t.steps.map(level), selected: selected ? byRow.get(t.id) || new Set() : undefined }))
-  }, [p.tracks, selected])
+    return p.tracks.map((t) => ({ ...t, levels: t.steps.map(level), keyHint: keyHints?.[t.id], selected: selected ? byRow.get(t.id) || new Set() : undefined }))
+  }, [p.tracks, selected, keyHints])
   const total = bars * spb
 
   const sel = useRef(select)
@@ -129,7 +130,7 @@ export function Sequencer({ p, bars, spb, compact, dense, onToggleStep, cellWidt
     <div ref={p.phRef} style={style} className={select ? 'seq-select' : undefined} onPointerDown={select ? onPointerDown : undefined}>
       <StepSequencer compact={compact} tracks={tracks} bars={bars} stepsPerBar={spb} stepsPerBeat={p.perBeat}
         playhead={p.pos} playing={p.playing} minCellWidth={cellWidth ?? (compact ? 18 : 16)}
-        onToggleStep={onCell} onMuteToggle={p.toggleMute} onSoloToggle={p.toggleSolo} onSeek={onRuler} loopRange={loopRange} />
+        onToggleStep={onCell} onMuteToggle={p.toggleMute} onSoloToggle={p.toggleSolo} onTrackPlay={onTrackPlay} onSeek={onRuler} loopRange={loopRange} />
     </div>
   )
 }

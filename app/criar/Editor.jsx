@@ -22,10 +22,12 @@ import { dataFromHash, decodeToque, encodeToque, shareUrl } from '@/lib/link'
 
 const plural = (n) => `${n} ${n === 1 ? 'compasso' : 'compassos'}`
 const EMPTY = new Set()
+const HIT_KEYS = 'asdfgh' // one key per instrument row, top to bottom: puts a hit at the playhead
 let clipboard = null // shared by every toque on this page, so notes can be copied between toques
 
 export default function Editor({ instrumentos }) {
   const rows = useMemo(() => kitRows(instrumentos), [instrumentos])
+  const keyHints = useMemo(() => Object.fromEntries(rows.slice(0, HIT_KEYS.length).map((r, n) => [r.id, HIT_KEYS[n].toUpperCase()])), [rows])
   const [state, dispatch] = useReducer(reducer, null) // { list, hist }; null until read from localStorage
   const [curId, setCurId] = useState(null)
   const [saved, setSaved] = useState(true)
@@ -92,9 +94,12 @@ export default function Editor({ instrumentos }) {
   const keys = useRef({})
   useEffect(() => {
     const onKey = (ev) => {
-      if (ev.target.closest?.('input,textarea,[role=listbox],[role=slider],[contenteditable=true]')) return
+      if (ev.target.closest?.('input,textarea,select,[role=listbox],[contenteditable=true]')) return
       const k = keys.current, mod = ev.ctrlKey || ev.metaKey, key = ev.key.toLowerCase()
       const run = (fn) => { ev.preventDefault(); fn() }
+      const hitRow = HIT_KEYS.indexOf(key)
+      if (hitRow >= 0 && !mod && !ev.altKey) { ev.preventDefault(); if (!ev.repeat) k.hitKey(hitRow); return }
+      if (ev.target.closest?.('[role=slider]')) return // the ruler and sliders use the arrows themselves
       if (mod && key === 'z') run(ev.shiftKey ? k.redo : k.undo)
       else if (mod && key === 'y') run(k.redo)
       else if (mod && key === 'a') run(k.selectAll)
@@ -136,8 +141,17 @@ export default function Editor({ instrumentos }) {
     move: (k) => apply((d) => M.moveSel(d, sel, k)),
     duplicate: () => apply((d) => M.duplicateSel(d, sel)),
     repeat: () => apply((d) => M.repeatSel(d, sel)),
+    // A S D F G H: a hit of the chosen strength on that row at the playhead (kept if already there), and its sound.
+    hitKey: (n) => {
+      const row = rows[n]
+      if (!row) return
+      const i = e.stepNow(), hit = M.hitFor(row, forca)
+      if (M.velAt(doc, row.id, i) !== forca) edit((d) => M.applyHit(d, row.id, i, forca))
+      e.audition(row.id, i, hit)
+    },
   }
   keys.current = actions
+  const playRow = (id) => e.audition(id, 0, M.hitFor(rows.find((r) => r.id === id), forca))
 
   const toggleStep = (id, i) => {
     if (selecting) {
@@ -349,6 +363,7 @@ export default function Editor({ instrumentos }) {
   )
   const grid = (cellWidth, dense) => (
     <Sequencer p={e} bars={doc.compassos} spb={spb} compact={mobile} dense={dense} onToggleStep={toggleStep} cellWidth={cellWidth} select={selectProps}
+      keyHints={mobile ? undefined : keyHints} onTrackPlay={playRow}
       trecho={{ bars: pr.trecho, onBars: (a, b) => pr.setTrecho([a, b]) }} />
   )
 

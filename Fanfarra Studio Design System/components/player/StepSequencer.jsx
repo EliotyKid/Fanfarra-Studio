@@ -24,7 +24,7 @@ const Lane = React.memo(function Lane({ t, total, cols, stepsPerBar, stepsPerBea
 });
 
 // Playhead: an ancestor may set --ph (0..1) to move it smoothly every frame without re-rendering.
-export function StepSequencer({ tracks = [], bars = 4, stepsPerBar = 8, stepsPerBeat = 2, playhead = null, playing = false, onToggleStep, onMuteToggle, onSoloToggle, onSeek, loopRange, compact = false, minCellWidth, followPlayhead = true, className = '', style }) {
+export function StepSequencer({ tracks = [], bars = 4, stepsPerBar = 8, stepsPerBeat = 2, playhead = null, playing = false, onToggleStep, onMuteToggle, onSoloToggle, onTrackPlay, onSeek, loopRange, compact = false, minCellWidth, followPlayhead = true, className = '', style }) {
   const total = bars * stepsPerBar;
   const minCell = minCellWidth ?? (compact ? 18 : 20);
   const cur = playhead == null ? -1 : Math.floor(playhead) % total;
@@ -65,7 +65,8 @@ export function StepSequencer({ tracks = [], bars = 4, stepsPerBar = 8, stepsPer
         <div className="fs-seq__corner"></div>
         {tracks.map((t) => (
           <TrackHeader key={t.id} name={t.name} color={t.color} muted={!!t.muted} compact={compact}
-            soloed={!!t.soloed} silenced={!!t.silenced}
+            soloed={!!t.soloed} silenced={!!t.silenced} keyHint={t.keyHint /* optional shortcut letter */}
+            onPlay={onTrackPlay ? () => onTrackPlay(t.id) : undefined}
             onSoloToggle={onSoloToggle ? (s) => onSoloToggle(t.id, s) : undefined}
             onMuteToggle={onMuteToggle ? (m) => onMuteToggle(t.id, m) : null} />
         ))}

@@ -11,6 +11,10 @@ export interface TrackHeaderProps {
   muted?: boolean;
   /** Pass null to hide the mute button. */
   onMuteToggle?: ((muted: boolean) => void) | null;
+  /** Makes the dot + name a button that plays the instrument. */
+  onPlay?: () => void;
+  /** Keyboard shortcut shown after the name, e.g. "A". */
+  keyHint?: string;
   /** Mobile density: 44px row, transparent background, 13px text. */
   compact?: boolean;
   className?: string;
