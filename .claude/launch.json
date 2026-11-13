@@ -1,0 +1,16 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": ["-NoProfile", "-Command", "fnm env --use-on-cd --shell powershell | Out-String | Invoke-Expression; fnm use --silent-if-unchanged; npx next dev -p 3005"],
+      "port": 3005
+    },
+    {
+      "name": "attach-3005",
+      "url": "http://localhost:3005",
+      "port": 3005
+    }
+  ]
+}

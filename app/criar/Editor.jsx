@@ -13,7 +13,7 @@ import { StatusMessage } from '@ds/components/feedback/StatusMessage.jsx'
 import { TransportControls } from '@ds/components/player/TransportControls.jsx'
 import { kitRows, slug } from '@/lib/kit'
 import { bpmOptions, useEngine, useSpaceToPlay } from '@/lib/useEngine'
-import { useFullscreen, useLandscapePhone, useMobile } from '@/lib/media'
+import { useCompact, useFullscreen, useLandscapePhone, useMobile } from '@/lib/media'
 import { canRedo, canUndo, reducer } from '@/lib/historico'
 import * as M from '@/lib/meusToques'
 import { FullscreenButton, LoadError, PraticaControls, Sequencer } from '../ui'
@@ -41,6 +41,7 @@ export default function Editor({ instrumentos }) {
   const fileRef = useRef(null)
   const mobile = useMobile()
   const landscape = useLandscapePhone()
+  const compact = useCompact() && !mobile // laptop: slim top bar like the phone lying down, desktop-size grid
   const fs = useFullscreen()
 
   useEffect(() => {
@@ -262,9 +263,9 @@ export default function Editor({ instrumentos }) {
     </div>
   )
   const transport = (
-    <TransportControls size={mobile ? 'sm' : 'lg'} spread={mobile && !landscape} playing={e.playing} onPlayToggle={e.setPlaying}
+    <TransportControls size={mobile || compact ? 'sm' : 'lg'} spread={mobile && !landscape} playing={e.playing} onPlayToggle={e.setPlaying}
       onPrev={() => step(-1)} onNext={() => step(1)} prevDisabled={list.length < 2} nextDisabled={list.length < 2}
-      loop={mobile ? loop : undefined} onLoopToggle={mobile ? setLoop : undefined} />
+      loop={mobile || compact ? loop : undefined} onLoopToggle={mobile || compact ? setLoop : undefined} />
   )
   const sep = <span aria-hidden="true" style={{ width: 1, alignSelf: 'stretch', margin: '4px 4px', background: 'var(--border-default)' }} />
   const editBar = (
@@ -351,29 +352,32 @@ export default function Editor({ instrumentos }) {
       trecho={{ bars: pr.trecho, onBars: (a, b) => pr.setTrecho([a, b]) }} />
   )
 
-  // ---------- phone lying down: controls on top, grid fills the rest (like the Toques player) ----------
-  if (landscape) {
+  // ---------- phone lying down / laptop: controls on top, grid fills the rest (like the Toques player) ----------
+  // Laptop keeps the desktop-size grid, study tools as icons and volume in the bar; the rest goes behind "Ajustes".
+  if (landscape || compact) {
     return (
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 12px 2px 16px' }}>
-          <div style={{ flex: '1 1 0', minWidth: 0 }}>{toqueSelect}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: compact ? '8px 16px 4px 24px' : '4px 12px 2px 16px' }}>
+          <div style={{ flex: '1 1 0', minWidth: 0, maxWidth: compact ? 320 : undefined }}>{toqueSelect}</div>
           {bpmSelect}
           {transport}
+          {compact && <PraticaControls pr={pr} p={e} spb={spb} bpm={doc.bpm} icons />}
+          {compact && <div style={{ marginLeft: 'auto' }}><VolumeSlider value={e.volume} onChange={e.setVolume} muted={e.muted} onMuteToggle={e.setMuted} width={120} /></div>}
           <IconButton icon="settings" label="Ajustes do toque" variant="surface" pressed={ajustes} onClick={() => setAjustes((a) => !a)} />
           <FullscreenButton fs={fs} />
         </div>
-        <div style={{ padding: '0 16px 4px' }}>{editBar}</div>
+        <div style={{ padding: compact ? '0 16px 6px 24px' : '0 16px 4px' }}>{editBar}</div>
         {ajustes && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, padding: '6px 16px 10px', borderTop: '1px solid var(--border-subtle)' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, padding: compact ? '8px 16px 10px 24px' : '6px 16px 10px', borderTop: '1px solid var(--border-subtle)' }}>
             <div style={{ flex: '1 1 220px', minWidth: 0 }}>{nameInput}</div>
             {novoBtn}
             {settings}
-            <PraticaControls pr={pr} p={e} spb={spb} bpm={doc.bpm} />
+            {!compact && <PraticaControls pr={pr} p={e} spb={spb} bpm={doc.bpm} />}
             {fileActions}
           </div>
         )}
         {banners}
-        <div style={{ flex: 1, minHeight: 0, overflow: 'auto', background: 'var(--bg-sunken)' }}>{grid(30, true)}</div>
+        <div style={{ flex: 1, minHeight: 0, overflow: 'auto', background: 'var(--bg-sunken)' }}>{compact ? grid() : grid(30, true)}</div>
       </div>
     )
   }
