@@ -17,6 +17,15 @@ test('link round trip: compressed, short, and validated on the way back', async 
   assert.deepEqual(back.hits, doc.hits)
 })
 
+test('mixer travels in the link and untrusted values are clamped', async () => {
+  const doc = { ...M.novo(1), mix: { bumbo: { vol: 40, pessoas: 5 } } }
+  const back = M.parseImport(await decodeToque(await encodeToque(doc)), rows)
+  assert.deepEqual(back.mix, { bumbo: { vol: 40, pessoas: 5 } })
+  const bad = M.parseImport(JSON.stringify({ mix: { bumbo: { vol: 999, pessoas: -3 }, 'tarol-40': { vol: 'x' }, intruso: { vol: 1 } } }), rows)
+  assert.deepEqual(bad.mix, { bumbo: { vol: 100, pessoas: 1 }, 'tarol-40': { vol: 100, pessoas: 1 } })
+  assert.deepEqual(M.toTracks({ ...doc, compassos: 1 }, rows).map((t) => [t.gain, t.pessoas]), [[0.4, 5], [1, 1], [1, 1]])
+})
+
 test('bad links are rejected', async () => {
   await assert.rejects(decodeToque('zAAAA'))
   await assert.rejects(decodeToque('x123'))

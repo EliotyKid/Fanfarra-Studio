@@ -7,6 +7,7 @@ import { Button } from '@ds/components/actions/Button.jsx'
 import { IconButton } from '@ds/components/actions/IconButton.jsx'
 import { ToggleButton } from '@ds/components/actions/ToggleButton.jsx'
 import { Select } from '@ds/components/forms/Select.jsx'
+import { Slider } from '@ds/components/forms/Slider.jsx'
 import { VolumeSlider } from '@ds/components/forms/VolumeSlider.jsx'
 import { Icon } from '@ds/components/icons/Icon.jsx'
 import { StatusMessage } from '@ds/components/feedback/StatusMessage.jsx'
@@ -37,6 +38,7 @@ export default function Editor({ instrumentos }) {
   const [selecting, setSelecting] = useState(false)
   const [sel, setSel] = useState(EMPTY)
   const [ajustes, setAjustes] = useState(false) // settings panel, phone lying down
+  const [mixer, setMixer] = useState(false)
   const [hasClip, setHasClip] = useState(!!clipboard)
   const [aviso, setAviso] = useState(null) // { tone, text } after sharing
   const [linkManual, setLinkManual] = useState('') // link to copy by hand when the browser blocks the clipboard
@@ -301,6 +303,14 @@ export default function Editor({ instrumentos }) {
       onPrev={() => step(-1)} onNext={() => step(1)} prevDisabled={list.length < 2} nextDisabled={list.length < 2}
       loop={mobile || compact ? loop : undefined} onLoopToggle={mobile || compact ? setLoop : undefined} />
   )
+  const mixerBtn = compact || landscape
+    ? <IconButton icon="sliders-horizontal" label="Mixer" variant="surface" pressed={mixer} onClick={() => setMixer((m) => !m)} />
+    : <ToggleButton icon="sliders-horizontal" pressed={mixer} onPressedChange={setMixer}>Mixer</ToggleButton>
+  const mixerPanel = mixer && (
+    <Mixer rows={rows} doc={doc} pad={compact ? '10px 16px 12px 24px' : landscape ? '6px 16px 10px' : mobile ? '0 16px 16px' : '0 24px 16px 40px'}
+      line={compact || landscape}
+      onChange={(id, patch, tag) => edit((d) => M.setMix(d, id, patch), tag && `mix:${id}:${tag}`)} />
+  )
   const sep = <span aria-hidden="true" style={{ width: 1, alignSelf: 'stretch', margin: '4px 4px', background: 'var(--border-default)' }} />
   const editBar = (
     <div role="toolbar" aria-label="Edição" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -398,6 +408,7 @@ export default function Editor({ instrumentos }) {
           {transport}
           {compact && <PraticaControls pr={pr} p={e} spb={spb} bpm={doc.bpm} icons />}
           {compact && <div style={{ marginLeft: 'auto' }}><VolumeSlider value={e.volume} onChange={e.setVolume} muted={e.muted} onMuteToggle={e.setMuted} width={120} /></div>}
+          {mixerBtn}
           <IconButton icon="settings" label="Ajustes do toque" variant="surface" pressed={ajustes} onClick={() => setAjustes((a) => !a)} />
           <FullscreenButton fs={fs} />
         </div>
@@ -411,6 +422,7 @@ export default function Editor({ instrumentos }) {
             {fileActions}
           </div>
         )}
+        {mixerPanel}
         {banners}
         <div style={{ flex: 1, minHeight: 0, overflow: 'auto', background: 'var(--bg-sunken)' }}>{compact ? grid() : grid(30, true)}</div>
       </div>
@@ -435,6 +447,7 @@ export default function Editor({ instrumentos }) {
           {settings}
           {!mobile && <ToggleButton icon="rotate-cw" pressed={loop} onPressedChange={setLoop}>Loop</ToggleButton>}
           {!mobile && <PraticaControls pr={pr} p={e} spb={spb} bpm={doc.bpm} />}
+          {mixerBtn}
           {fileActions}
         </div>
       </header>
@@ -442,6 +455,7 @@ export default function Editor({ instrumentos }) {
       <div style={{ display: 'flex', justifyContent: 'center', padding: mobile ? '20px 16px 20px 24px' : '20px 0' }}>{transport}</div>
       {mobile && <div style={{ padding: '0 16px 16px' }}><PraticaControls pr={pr} p={e} spb={spb} bpm={doc.bpm} /></div>}
       <div style={{ padding: mobile ? '0 16px 16px' : '0 24px 16px 40px' }}>{editBar}</div>
+      {mixerPanel}
       {banners}
       <div style={{ flex: mobile ? 'none' : 1, minHeight: 0, overflow: mobile ? 'visible' : 'auto', marginRight: mobile ? 0 : 16, background: 'var(--bg-sunken)' }}>
         {grid(mobile ? 30 : undefined)}
@@ -460,6 +474,35 @@ export default function Editor({ instrumentos }) {
           <FullscreenButton fs={fs} />
         </div>
       </footer>
+    </div>
+  )
+}
+
+// Mixer: volume and how many people play each instrument (naipe effect); saved in the toque.
+function Mixer({ rows, doc, pad, line, onChange }) {
+  return (
+    <div role="group" aria-label="Mixer" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '12px 20px', padding: pad, borderTop: line ? '1px solid var(--border-subtle)' : undefined }}>
+      {rows.map((r) => {
+        const m = M.mixOf(doc, r.id)
+        return (
+          <div key={r.id} style={{ display: 'grid', gap: 6, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, font: 'var(--type-caption)', color: 'var(--fg-1)' }}>
+              <span aria-hidden="true" style={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, background: r.color }} />
+              <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+              <span style={{ color: 'var(--fg-2)', fontVariantNumeric: 'tabular-nums' }}>{m.vol}%</span>
+            </div>
+            <Slider value={m.vol} label={`Volume do ${r.name}`} valueText={`${m.vol}%`} onChange={(v) => onChange(r.id, { vol: v }, 'vol')} />
+            <div role="group" aria-label={`Pessoas tocando ${r.name}`} style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--fg-2)' }}>
+              <Icon name="users" size={16} />
+              <IconButton icon="minus" label={`Menos pessoas no ${r.name}`} size="sm" disabled={m.pessoas <= 1} onClick={() => onChange(r.id, { pessoas: m.pessoas - 1 })} />
+              <span aria-live="polite" style={{ minWidth: 70, textAlign: 'center', font: 'var(--type-caption)', color: 'var(--fg-1)' }}>
+                {m.pessoas === 1 ? '1 pessoa' : `${m.pessoas} pessoas`}
+              </span>
+              <IconButton icon="plus" label={`Mais pessoas no ${r.name}`} size="sm" disabled={m.pessoas >= M.MAX_PESSOAS} onClick={() => onChange(r.id, { pessoas: m.pessoas + 1 })} />
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }

@@ -4,13 +4,13 @@
     {
       "name": "dev",
       "runtimeExecutable": "powershell",
-      "runtimeArgs": ["-NoProfile", "-Command", "fnm env --use-on-cd --shell powershell | Out-String | Invoke-Expression; fnm use --silent-if-unchanged; npx next dev -p 3005"],
+      "runtimeArgs": ["-NoProfile", "-Command", "$env:Path = [Environment]::GetEnvironmentVariable('Path','User') + ';' + [Environment]::GetEnvironmentVariable('Path','Machine'); npx next dev -p 3005"],
       "port": 3005
     },
     {
-      "name": "attach-3005",
-      "url": "http://localhost:3005",
-      "port": 3005
+      "name": "attach-3000",
+      "url": "http://localhost:3000",
+      "port": 3000
     }
   ]
 }
