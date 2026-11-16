@@ -24,6 +24,7 @@ import { dataFromHash, decodeToque, encodeToque, shareUrl } from '@/lib/link'
 const plural = (n) => `${n} ${n === 1 ? 'compasso' : 'compassos'}`
 const EMPTY = new Set()
 const HIT_KEYS = 'asdfgh' // one key per instrument row, top to bottom: puts a hit at the playhead
+const FORCA_KEYS = 'uio' // Fraca, Normal, Forte (same order as M.FORCAS)
 let clipboard = null // shared by every toque on this page, so notes can be copied between toques
 
 export default function Editor({ instrumentos }) {
@@ -101,6 +102,8 @@ export default function Editor({ instrumentos }) {
       const run = (fn) => { ev.preventDefault(); fn() }
       const hitRow = HIT_KEYS.indexOf(key)
       if (hitRow >= 0 && !mod && !ev.altKey) { ev.preventDefault(); if (!ev.repeat) k.hitKey(hitRow); return }
+      const forcaIdx = FORCA_KEYS.indexOf(key)
+      if (forcaIdx >= 0 && !mod && !ev.altKey) { ev.preventDefault(); k.pickForca(M.FORCAS[forcaIdx].value); return }
       // Playhead: arrows one step, Shift a beat, Ctrl a bar; Home/End. Also replaces the ruler's own keys,
       // so it behaves the same wherever the focus is. With hits selected, the arrows move them instead.
       const ruler = ev.target.closest?.('[data-seek]')
@@ -147,6 +150,7 @@ export default function Editor({ instrumentos }) {
   const seekTo = (s) => e.seek(Math.max(0, Math.min(total - 1, s)))
   const actions = {
     hasSel, perBeat, spb, undo, redo, seekTo,
+    pickForca: (v) => pickForca(v), // declared further down
     // Moves the playhead `size` steps; for a beat or bar it lands on the start of the previous/next one.
     nav: (dir, size) => {
       const from = Math.floor(e.pos)
