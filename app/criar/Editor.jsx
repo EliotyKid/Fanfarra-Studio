@@ -84,13 +84,18 @@ export default function Editor({ instrumentos }) {
   const perBeat = doc ? M.subdivOf(doc) : 4
   const total = doc ? doc.compassos * spb : 16
   const rawTracks = useMemo(() => (doc ? M.toTracks(doc, rows) : []), [doc, rows])
+  const [partesOpen, setPartesOpen] = useState(false)
+  const [tocarLista, setTocarLista] = useState(false) // play the bars in the play list's order
+  const ordem = useMemo(() => (doc ? M.ordemDe(doc) : []), [doc])
+  const order = useMemo(() => (tocarLista && ordem.length ? ordem.map((o) => o.bar) : null), [tocarLista, ordem])
   const pr = usePratica()
   const e = useEngine({
     rawTracks, total, bpm: bpmDe(pr, doc?.bpm ?? 120), perBeat, loop, instrumentos,
     range: doc ? rangeOf(pr.trecho, spb, doc.compassos) : null, metro: pr.metro, countIn: pr.countIn,
-    beatsPerBar: spb / perBeat,
+    beatsPerBar: spb / perBeat, order,
   })
-  useRampa(pr, doc?.bpm ?? 120, e.pos, e.playing)
+  // With a list, bars jump back inside it (intro -> loop); only the list starting over counts as a loop.
+  useRampa(pr, doc?.bpm ?? 120, order ? e.ordIdx : e.pos, e.playing)
   useSpaceToPlay(e.togglePlay)
 
   // Keyboard shortcuts read the latest actions through a ref (the listener is registered once).
@@ -315,6 +320,15 @@ export default function Editor({ instrumentos }) {
       line={compact || landscape}
       onChange={(id, patch, tag) => edit((d) => M.setMix(d, id, patch), tag && `mix:${id}:${tag}`)} />
   )
+  const partesBtn = compact || landscape
+    ? <IconButton icon="list-music" label="Partes e lista" variant="surface" pressed={partesOpen} onClick={() => setPartesOpen((o) => !o)} />
+    : <ToggleButton icon="list-music" pressed={partesOpen} onPressedChange={setPartesOpen}>Partes</ToggleButton>
+  const partesPanel = partesOpen && (
+    <Partes doc={doc} pad={compact ? '10px 16px 12px 24px' : landscape ? '6px 16px 10px' : mobile ? '0 16px 16px' : '0 24px 16px 40px'}
+      line={compact || landscape} tocar={tocarLista} onTocar={setTocarLista}
+      atual={order && e.playing ? ordem[e.ordIdx]?.item : undefined}
+      onEdit={(fn, tag) => edit(fn, tag)} />
+  )
   const sep = <span aria-hidden="true" style={{ width: 1, alignSelf: 'stretch', margin: '4px 4px', background: 'var(--border-default)' }} />
   const editBar = (
     <div role="toolbar" aria-label="Edição" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -413,6 +427,7 @@ export default function Editor({ instrumentos }) {
           {compact && <PraticaControls pr={pr} p={e} spb={spb} bpm={doc.bpm} icons />}
           {compact && <div style={{ marginLeft: 'auto' }}><VolumeSlider value={e.volume} onChange={e.setVolume} muted={e.muted} onMuteToggle={e.setMuted} width={120} /></div>}
           {mixerBtn}
+          {partesBtn}
           <IconButton icon="settings" label="Ajustes do toque" variant="surface" pressed={ajustes} onClick={() => setAjustes((a) => !a)} />
           <FullscreenButton fs={fs} />
         </div>
@@ -427,6 +442,7 @@ export default function Editor({ instrumentos }) {
           </div>
         )}
         {mixerPanel}
+        {partesPanel}
         {banners}
         <div style={{ flex: 1, minHeight: 0, overflow: 'auto', background: 'var(--bg-sunken)' }}>{compact ? grid() : grid(30, true)}</div>
       </div>
@@ -452,6 +468,7 @@ export default function Editor({ instrumentos }) {
           {!mobile && <ToggleButton icon="rotate-cw" pressed={loop} onPressedChange={setLoop}>Loop</ToggleButton>}
           {!mobile && <PraticaControls pr={pr} p={e} spb={spb} bpm={doc.bpm} />}
           {mixerBtn}
+          {partesBtn}
           {fileActions}
         </div>
       </header>
@@ -460,6 +477,7 @@ export default function Editor({ instrumentos }) {
       {mobile && <div style={{ padding: '0 16px 16px' }}><PraticaControls pr={pr} p={e} spb={spb} bpm={doc.bpm} /></div>}
       <div style={{ padding: mobile ? '0 16px 16px' : '0 24px 16px 40px' }}>{editBar}</div>
       {mixerPanel}
+      {partesPanel}
       {banners}
       <div style={{ flex: mobile ? 'none' : 1, minHeight: 0, overflow: mobile ? 'visible' : 'auto', marginRight: mobile ? 0 : 16, background: 'var(--bg-sunken)' }}>
         {grid(mobile ? 30 : undefined)}
@@ -478,6 +496,72 @@ export default function Editor({ instrumentos }) {
           <FullscreenButton fs={fs} />
         </div>
       </footer>
+    </div>
+  )
+}
+
+// Partes: name bar ranges (intro, main loop, ending...) and build the play list (each part N times).
+// atual = list item playing now (highlighted).
+const fieldStyle = { font: 'var(--type-body)', padding: '6px 10px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-default)', background: 'var(--surface-card)', color: 'var(--fg-1)', minWidth: 0 }
+function Partes({ doc, pad, line, tocar, onTocar, atual, onEdit }) {
+  const partes = M.partesOf(doc), lista = M.listaOf(doc)
+  const bars = Array.from({ length: doc.compassos }, (_, b) => ({ value: b, label: `Compasso ${b + 1}` }))
+  const nomeDe = (id) => partes.find((p) => p.id === id)
+  const totalBars = M.ordemDe(doc).length
+  const caption = { font: 'var(--type-caption)', color: 'var(--fg-2)' }
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px 32px', padding: pad, borderTop: line ? '1px solid var(--border-subtle)' : undefined }}>
+      <section aria-label="Partes do toque" style={{ display: 'grid', gap: 8, alignContent: 'start' }}>
+        <span style={caption}>Partes (nomeie trechos de compassos)</span>
+        {partes.map((p) => (
+          <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <input aria-label="Nome da parte" value={p.nome} maxLength={40} style={{ ...fieldStyle, flex: '1 1 120px' }}
+              onChange={(ev) => onEdit((d) => M.setParte(d, p.id, { nome: ev.target.value }), `parte:${p.id}`)} />
+            <Select label={`Início de ${p.nome}`} value={Math.min(p.de, doc.compassos - 1)} options={bars}
+              onChange={(v) => onEdit((d) => M.setParte(d, p.id, { de: v, ate: Math.max(v, p.ate) }))} />
+            <span style={caption}>até</span>
+            <Select label={`Fim de ${p.nome}`} value={Math.min(p.ate, doc.compassos - 1)} options={bars.filter((b) => b.value >= Math.min(p.de, doc.compassos - 1))}
+              onChange={(v) => onEdit((d) => M.setParte(d, p.id, { ate: v }))} />
+            <IconButton icon="trash-2" label={`Apagar a parte ${p.nome}`} size="sm" onClick={() => onEdit((d) => M.removeParte(d, p.id))} />
+          </div>
+        ))}
+        <div>
+          <Button variant="secondary" size="sm" icon="plus" disabled={partes.length >= M.MAX_PARTES} onClick={() => onEdit(M.addParte)}>Nova parte</Button>
+        </div>
+      </section>
+      <section aria-label="Lista de reprodução" style={{ display: 'grid', gap: 8, alignContent: 'start' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ ...caption, flex: 1 }}>Lista de reprodução{totalBars ? ` · ${plural(totalBars)}` : ''}</span>
+          <ToggleButton icon="list-music" pressed={tocar && lista.length > 0} disabled={!lista.length} onPressedChange={onTocar}>Tocar pela lista</ToggleButton>
+        </div>
+        {!partes.length && <span style={caption}>Crie uma parte para montar a lista.</span>}
+        <ol style={{ display: 'grid', gap: 6, margin: 0, padding: 0, listStyle: 'none' }}>
+          {lista.map((l, i) => {
+            const p = nomeDe(l.parte)
+            return (
+              <li key={i} aria-current={atual === i ? 'true' : undefined} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 4px 4px 10px', borderRadius: 'var(--radius-lg)', background: atual === i ? 'var(--accent-soft)' : 'var(--surface-card)', border: `1px solid ${atual === i ? 'var(--accent)' : 'var(--border-subtle)'}` }}>
+                <span style={{ flex: 1, minWidth: 0, font: 'var(--type-body)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {i + 1}. {p.nome} <span style={caption}>({p.de === p.ate ? `c. ${p.de + 1}` : `c. ${p.de + 1}–${p.ate + 1}`})</span>
+                </span>
+                <IconButton icon="minus" label={`Tocar ${p.nome} menos vezes`} size="sm" disabled={l.vezes <= 1} onClick={() => onEdit((d) => M.setLista(d, i, { vezes: l.vezes - 1 }))} />
+                <span aria-live="polite" style={{ minWidth: 28, textAlign: 'center', font: 'var(--type-value)' }}>{l.vezes}×</span>
+                <IconButton icon="plus" label={`Tocar ${p.nome} mais vezes`} size="sm" disabled={l.vezes >= M.MAX_VEZES} onClick={() => onEdit((d) => M.setLista(d, i, { vezes: l.vezes + 1 }))} />
+                <IconButton icon="chevron-up" label="Subir na lista" size="sm" disabled={i === 0} onClick={() => onEdit((d) => M.moveLista(d, i, -1))} />
+                <IconButton icon="chevron-down" label="Descer na lista" size="sm" disabled={i === lista.length - 1} onClick={() => onEdit((d) => M.moveLista(d, i, 1))} />
+                <IconButton icon="x" label={`Tirar ${p.nome} da lista`} size="sm" onClick={() => onEdit((d) => M.removeLista(d, i))} />
+              </li>
+            )
+          })}
+        </ol>
+        {partes.length > 0 && (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={caption}>Adicionar:</span>
+            {partes.map((p) => (
+              <Button key={p.id} variant="ghost" size="sm" icon="plus" disabled={lista.length >= M.MAX_LISTA} onClick={() => onEdit((d) => M.addLista(d, p.id))}>{p.nome || 'Sem nome'}</Button>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   )
 }

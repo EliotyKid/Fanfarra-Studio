@@ -25,6 +25,26 @@ test('setCompassos trims hits past the end', () => {
   assert.deepEqual(M.setCompassos(d, 1).hits.bumbo, [[3, 100]])
 })
 
+test('play list: parts played in order, N times, clamped to the bars left', () => {
+  let d = M.addParte(M.addParte(M.addParte({ ...M.novo(1), compassos: 6 })))
+  const [intro, loop, fim] = M.partesOf(d).map((p) => p.id)
+  d = M.setParte(d, intro, { nome: 'Introdução', de: 0, ate: 1 })
+  d = M.setParte(d, loop, { de: 2, ate: 3 })
+  d = M.setParte(d, fim, { de: 4, ate: 5 })
+  d = M.setLista(M.addLista(M.addLista(M.addLista(d, intro), loop), fim), 1, { vezes: 4 })
+  assert.deepEqual(M.ordemDe(d).map((o) => o.bar), [0, 1, 2, 3, 2, 3, 2, 3, 2, 3, 4, 5])
+  assert.deepEqual(M.ordemDe(M.moveLista(d, 2, -1)).map((o) => o.bar).slice(0, 4), [0, 1, 4, 5])
+  assert.deepEqual(M.ordemDe(M.setCompassos(d, 5)).map((o) => o.bar).slice(-2), [3, 4]) // part 5–6 now ends at bar 5
+  assert.deepEqual(M.listaOf(M.removeParte(d, loop)).map((l) => l.parte), [intro, fim])
+})
+
+test('parseImport keeps valid parts and list, drops the rest', () => {
+  const t = JSON.stringify({ compassos: 4, partes: [{ id: 'a', nome: 'A', de: 1, ate: 9 }, { id: 'b' }], lista: [{ parte: 'a', vezes: 99 }, { parte: 'zz', vezes: 1 }] })
+  const d = M.parseImport(t, rows)
+  assert.deepEqual(d.partes, [{ id: 'a', nome: 'A', de: 1, ate: 3 }])
+  assert.deepEqual(d.lista, [{ parte: 'a', vezes: M.MAX_VEZES }])
+})
+
 test('toTracks carries the strength', () => {
   const d = { ...M.novo(1), compassos: 1, hits: { 'tarol-40': [[2, 60]] } }
   const t = M.toTracks(d, rows)
